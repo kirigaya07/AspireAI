@@ -3,7 +3,7 @@
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { generateWithDeepSeek } from "@/lib/deepseek";
-import { trackDeepSeekUsage } from "@/lib/ai-helpers";
+import { trackDeepSeekUsage, extractJSONFromText } from "@/lib/ai-helpers";
 
 export async function generateQuiz() {
   const { userId } = await auth();
@@ -19,6 +19,7 @@ export async function generateQuiz() {
 
   if (!user) throw new Error("User not found");
 
+  let text = null;
   try {
     const prompt = `
     You are a technical interviewer for a ${user.industry} role.
@@ -34,7 +35,8 @@ export async function generateQuiz() {
     - Make sure there is only one correct answer per question
     - Provide a detailed explanation for why the correct answer is right
     
-    Return your response in this JSON format only, with no additional text:
+    CRITICAL: Return ONLY the JSON object below. Do NOT include any explanatory text, reasoning, or additional content before or after the JSON. Start your response with { and end with }.
+    
     {
       "questions": [
         {
@@ -47,8 +49,10 @@ export async function generateQuiz() {
     }
     `;
 
-    const text = await generateWithDeepSeek(prompt);
-    const cleanedText = text.replace(/```(?:json)?\n?/g, "").trim();
+    text = await generateWithDeepSeek(prompt);
+    
+    // Extract JSON from response - handle cases where AI includes explanatory text
+    const cleanedText = extractJSONFromText(text);
     const quiz = JSON.parse(cleanedText);
 
     await trackDeepSeekUsage(
@@ -58,10 +62,18 @@ export async function generateQuiz() {
       "Generated interview questions"
     );
 
+    // Validate that questions array exists and has items
+    if (!quiz.questions || !Array.isArray(quiz.questions) || quiz.questions.length === 0) {
+      throw new Error("Invalid quiz format: questions array is missing or empty");
+    }
+
     return quiz.questions;
   } catch (error) {
     console.error("Error generating quiz:", error);
-    throw new Error("Failed to generate quiz questions");
+    if (text) {
+      console.error("Raw response:", text);
+    }
+    throw new Error(`Failed to generate quiz questions: ${error.message}`);
   }
 }
 

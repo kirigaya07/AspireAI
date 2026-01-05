@@ -3,11 +3,14 @@
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { generateWithDeepSeek } from "@/lib/deepseek";
+import { extractJSONFromText } from "@/lib/ai-helpers";
 
 export const generateAIInsights = async (industry) => {
   // Construct a structured prompt to generate industry-specific insights in JSON format
   const prompt = `
   TASK: Generate a detailed analysis of the ${industry} industry in India using ONLY Glassdoor's latest data in JSON format.
+
+  CRITICAL: Return ONLY the JSON object below. Do NOT include any explanatory text, reasoning, or additional content before or after the JSON. Start your response with { and end with }.
 
   OUTPUT FORMAT: Return ONLY the following JSON structure without ANY explanatory text, markdown formatting, or code block delimiters:
   {
@@ -54,17 +57,21 @@ export const generateAIInsights = async (industry) => {
      - No trailing whitespace or special characters
 `;
 
+  let text = null;
   try {
     // Use the DeepSeek helper function instead
-    const text = await generateWithDeepSeek(prompt);
+    text = await generateWithDeepSeek(prompt);
 
-    // Clean the response by removing any potential code block formatting
-    const cleanedText = text.replace(/```(?:json)?\n?/g, "").trim();
+    // Extract JSON from response - handle cases where AI includes explanatory text
+    const cleanedText = extractJSONFromText(text);
 
     // Parse and return the structured JSON response
     return JSON.parse(cleanedText);
   } catch (error) {
     console.error("Error generating industry insights:", error);
+    if (text) {
+      console.error("Raw response:", text);
+    }
     throw new Error("Failed to generate industry insights: " + error.message);
   }
 };
