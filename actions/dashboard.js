@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
-import { generateWithDeepSeek } from "@/lib/deepseek";
+import { getAuthenticatedUserWith } from "@/lib/auth-utils";
+import { generateWithOpenAI } from "@/lib/openai";
 import { extractJSONFromText } from "@/lib/ai-helpers";
 
 export const generateAIInsights = async (industry) => {
@@ -59,8 +59,8 @@ export const generateAIInsights = async (industry) => {
 
   let text = null;
   try {
-    // Use the DeepSeek helper function instead
-    text = await generateWithDeepSeek(prompt);
+    // Use the OpenAI helper function
+    text = await generateWithOpenAI(prompt);
 
     // Extract JSON from response - handle cases where AI includes explanatory text
     const cleanedText = extractJSONFromText(text);
@@ -76,20 +76,17 @@ export const generateAIInsights = async (industry) => {
   }
 };
 
+/**
+ * Get industry insights for the authenticated user
+ * Generates new insights if they don't exist
+ * @returns {Promise<Object>} Industry insight object
+ */
 export async function getIndustryInsights() {
-  // Authenticate the user
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  // Fetch the user from the database, including their industry insights
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
+  const user = await getAuthenticatedUserWith({
     include: {
-      industryInsight: true, // Ensure industry insights are retrieved if they exist
+      industryInsight: true,
     },
   });
-
-  if (!user) throw new Error("User not found");
 
   // If the user has no industry insights, generate new ones
   if (!user.industryInsight) {

@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthenticatedUser, getAuthenticatedUserWith } from "@/lib/auth-utils";
 import { generateAIInsights } from "./dashboard";
 
 /**
@@ -17,18 +17,7 @@ import { generateAIInsights } from "./dashboard";
  * @returns {Promise<{ updateUser: Object, industryInsight: Object }>} Updated user and industry insight records.
  */
 export async function updateUser(data) {
-  // Authenticate the user and get their ID.
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized"); // Throw an error if the user is not authenticated.
-
-  // Fetch the user from the database using their Clerk user ID.
-  const user = await db.user.findUnique({
-    where: {
-      clerkUserId: userId,
-    },
-  });
-
-  if (!user) throw new Error("User not found"); // Throw an error if the user does not exist.
+  const user = await getAuthenticatedUser();
 
   try {
     // Perform database operations within a transaction to ensure data consistency.
@@ -89,33 +78,16 @@ export async function updateUser(data) {
  * @returns {Promise<{ isOnboarded: boolean }>} An object indicating whether the user is onboarded.
  */
 export async function getUserOnboardingStatus() {
-  // Authenticate the user and get their Clerk user ID.
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized"); // Throw an error if authentication fails.
-
-  // Fetch the user from the database to check if they exist.
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
-
-  if (!user) throw new Error("User not found"); // Throw an error if the user does not exist.
-
   try {
-    // Retrieve only the "industry" field to determine onboarding status.
-    const userIndustry = await db.user.findUnique({
-      where: {
-        clerkUserId: userId,
-      },
-      select: {
-        industry: true, // Select only the industry field.
-      },
+    const user = await getAuthenticatedUserWith({
+      select: { industry: true },
     });
 
     return {
-      isOnboarded: !!userIndustry?.industry, // Convert industry presence to a boolean value.
+      isOnboarded: !!user.industry,
     };
   } catch (error) {
     console.error("Error checking onboarding status:", error);
-    throw new Error("Failed to check onboarding status"); // Provide a user-friendly error message.
+    throw new Error("Failed to check onboarding status");
   }
 }

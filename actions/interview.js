@@ -1,23 +1,21 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
-import { generateWithDeepSeek } from "@/lib/deepseek";
-import { trackDeepSeekUsage, extractJSONFromText } from "@/lib/ai-helpers";
+import { getAuthenticatedUser, getAuthenticatedUserWith } from "@/lib/auth-utils";
+import { generateWithOpenAI } from "@/lib/openai";
+import { trackOpenAIUsage, extractJSONFromText } from "@/lib/ai-helpers";
 
+/**
+ * Generate a technical interview quiz
+ * @returns {Promise<Array>} Array of quiz questions
+ */
 export async function generateQuiz() {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
+  const user = await getAuthenticatedUserWith({
     select: {
       industry: true,
       skills: true,
     },
   });
-
-  if (!user) throw new Error("User not found");
 
   let text = null;
   try {
@@ -49,13 +47,13 @@ export async function generateQuiz() {
     }
     `;
 
-    text = await generateWithDeepSeek(prompt);
+    text = await generateWithOpenAI(prompt);
     
     // Extract JSON from response - handle cases where AI includes explanatory text
     const cleanedText = extractJSONFromText(text);
     const quiz = JSON.parse(cleanedText);
 
-    await trackDeepSeekUsage(
+    await trackOpenAIUsage(
       prompt,
       text,
       "interview",
@@ -77,26 +75,73 @@ export async function generateQuiz() {
   }
 }
 
+/**
+ * Save quiz results and generate improvement tips
+ * @param {Array} questions - Array of quiz questions
+ * @param {Array} answers - Array of user answers
+ * @param {number} score - User's score
+ * @returns {Promise<Object>} Saved assessment object
+ */
 export async function saveQuizResult(questions, answers, score) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  const user = await getAuthenticatedUser();
 
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
+  // Validate inputs
+  if (!questions || !Array.isArray(questions) || questions.length === 0) {
+    throw new Error("Invalid questions data");
+  }
+
+  if (!answers || !Array.isArray(answers)) {
+    throw new Error("Invalid answers data");
+  }
+
+  // Calculate score properly on server side as well for validation
+  let correctCount = 0;
+  let totalAnswered = 0;
+
+  const questionResults = questions.map((q, index) => {
+    const userAnswer = answers[index];
+    const correctAnswer = q.correctAnswer;
+    
+    // Normalize answers for comparison
+    const normalizedUserAnswer = userAnswer 
+      ? String(userAnswer).trim() 
+      : null;
+    const normalizedCorrectAnswer = String(correctAnswer).trim();
+    
+    // Count answered questions
+    if (normalizedUserAnswer !== null && normalizedUserAnswer !== undefined && normalizedUserAnswer !== "") {
+      totalAnswered++;
+    }
+    
+    // Check if answer is correct
+    const isCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
+    
+    if (isCorrect && normalizedUserAnswer !== null) {
+      correctCount++;
+    }
+
+    return {
+      question: q.question,
+      answer: correctAnswer,
+      userAnswer: userAnswer || "Not answered",
+      isCorrect,
+      explanation: q.explanation || "No explanation provided",
+    };
   });
 
-  if (!user) throw new Error("User not found");
+  // Recalculate score on server for accuracy
+  const calculatedScore = totalAnswered > 0 
+    ? Math.round((correctCount / totalAnswered) * 100) 
+    : 0;
 
-  const questionResults = questions.map((q, index) => ({
-    question: q.question,
-    answer: q.correctAnswer,
-    userAnswer: answers[index],
-    isCorrect: answers[index] === q.correctAnswer,
-    explanation: q.explanation,
-  }));
+  // Use the calculated score if it differs significantly from the client score
+  // (within 5% tolerance to account for rounding differences)
+  const finalScore = Math.abs(calculatedScore - score) > 5 ? calculatedScore : score;
 
-  // Get wrong answers
-  const wrongAnswers = questionResults.filter((q) => !q.isCorrect);
+  // Get wrong answers (excluding unanswered questions for improvement tips)
+  const wrongAnswers = questionResults.filter(
+    (q) => !q.isCorrect && q.userAnswer !== "Not answered"
+  );
 
   // Only generate improvement tips if there are wrong answers
   let improvementTip = "";
@@ -128,7 +173,7 @@ export async function saveQuizResult(questions, answers, score) {
     `;
 
     try {
-      improvementTip = await generateWithDeepSeek(improvementPrompt);
+      improvementTip = await generateWithOpenAI(improvementPrompt);
     } catch (error) {
       console.error("Error generating improvement tip:", error);
       // Provide a fallback improvement tip if generation fails
@@ -141,29 +186,31 @@ export async function saveQuizResult(questions, answers, score) {
     const assessment = await db.assessment.create({
       data: {
         userId: user.id,
-        quizScore: score,
+        quizScore: finalScore,
         questions: questionResults,
         category: "Technical",
         improvementTip,
       },
     });
 
-    return assessment;
+    return {
+      ...assessment,
+      correctCount,
+      totalAnswered,
+      totalQuestions: questions.length,
+    };
   } catch (error) {
     console.error("Error saving quiz result:", error);
     throw new Error("Failed to save quiz result");
   }
 }
 
+/**
+ * Get all assessments for the authenticated user
+ * @returns {Promise<Array>} Array of assessment objects
+ */
 export async function getAssessments() {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
-
-  if (!user) throw new Error("User not found");
+  const user = await getAuthenticatedUser();
 
   try {
     const assessments = await db.assessment.findMany({

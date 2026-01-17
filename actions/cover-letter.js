@@ -1,19 +1,20 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
-import { generateWithDeepSeek } from "@/lib/deepseek";
-import { trackDeepSeekUsage } from "@/lib/ai-helpers";
+import { getAuthenticatedUser } from "@/lib/auth-utils";
+import { generateWithOpenAI } from "@/lib/openai";
+import { trackOpenAIUsage } from "@/lib/ai-helpers";
 
+/**
+ * Generate a cover letter using AI
+ * @param {Object} data - Cover letter generation data
+ * @param {string} data.jobTitle - Job title
+ * @param {string} data.companyName - Company name
+ * @param {string} data.jobDescription - Job description
+ * @returns {Promise<Object>} Generated cover letter object
+ */
 export async function generateCoverLetter(data) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
-
-  if (!user) throw new Error("User not found");
+  const user = await getAuthenticatedUser();
 
   const prompt = `
     Write a professional cover letter for a ${data.jobTitle} position at ${
@@ -43,13 +44,13 @@ export async function generateCoverLetter(data) {
 
   try {
     // Generate content first
-    const content = await generateWithDeepSeek(prompt);
+    const content = await generateWithOpenAI(prompt);
 
     // Verify content was generated properly
     if (!content) throw new Error("Failed to generate content");
 
     // Then track token usage with actual input and output
-    await trackDeepSeekUsage(
+    await trackOpenAIUsage(
       prompt,
       content,
       "cover_letter",
@@ -74,15 +75,12 @@ export async function generateCoverLetter(data) {
   }
 }
 
+/**
+ * Get all cover letters for the authenticated user
+ * @returns {Promise<Array>} Array of cover letters
+ */
 export async function getCoverLetters() {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
-
-  if (!user) throw new Error("User not found");
+  const user = await getAuthenticatedUser();
 
   return await db.coverLetter.findMany({
     where: {
@@ -94,15 +92,13 @@ export async function getCoverLetters() {
   });
 }
 
+/**
+ * Get a specific cover letter by ID
+ * @param {string} id - Cover letter ID
+ * @returns {Promise<Object|null>} Cover letter object or null if not found
+ */
 export async function getCoverLetter(id) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
-
-  if (!user) throw new Error("User not found");
+  const user = await getAuthenticatedUser();
 
   return await db.coverLetter.findUnique({
     where: {
@@ -112,15 +108,13 @@ export async function getCoverLetter(id) {
   });
 }
 
+/**
+ * Delete a cover letter
+ * @param {string} id - Cover letter ID
+ * @returns {Promise<Object>} Deleted cover letter object
+ */
 export async function deleteCoverLetter(id) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
-
-  if (!user) throw new Error("User not found");
+  const user = await getAuthenticatedUser();
 
   return await db.coverLetter.delete({
     where: {
@@ -130,15 +124,14 @@ export async function deleteCoverLetter(id) {
   });
 }
 
+/**
+ * Update a cover letter's content
+ * @param {string} id - Cover letter ID
+ * @param {string} content - New content
+ * @returns {Promise<Object>} Updated cover letter object
+ */
 export async function updateCoverLetter(id, content) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
-
-  if (!user) throw new Error("User not found");
+  const user = await getAuthenticatedUser();
 
   return await db.coverLetter.update({
     where: {

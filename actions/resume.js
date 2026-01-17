@@ -1,20 +1,18 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
-import { generateWithDeepSeek } from "@/lib/deepseek";
+import { getAuthenticatedUser } from "@/lib/auth-utils";
+import { generateWithOpenAI } from "@/lib/openai";
 import { revalidatePath } from "next/cache";
-import { trackDeepSeekUsage } from "@/lib/ai-helpers";
+import { trackOpenAIUsage } from "@/lib/ai-helpers";
 
+/**
+ * Save or update user's resume content
+ * @param {string} content - The resume content
+ * @returns {Promise<Object>} The saved resume object
+ */
 export async function saveResume(content) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
-
-  if (!user) throw new Error("User not found");
+  const user = await getAuthenticatedUser();
 
   try {
     const resume = await db.resume.upsert({
@@ -38,15 +36,12 @@ export async function saveResume(content) {
   }
 }
 
+/**
+ * Get the user's resume
+ * @returns {Promise<Object|null>} The resume object or null if not found
+ */
 export async function getResume() {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
-
-  if (!user) throw new Error("User not found");
+  const user = await getAuthenticatedUser();
 
   return await db.resume.findUnique({
     where: {
@@ -55,18 +50,17 @@ export async function getResume() {
   });
 }
 
+/**
+ * Improve resume content using AI
+ * @param {Object} params - Parameters
+ * @param {string} params.current - Current resume content
+ * @param {string} params.type - Type of content being improved
+ * @returns {Promise<string>} Improved content
+ */
 export async function improveWithAI({ current, type }) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-    include: {
-      industryInsight: true,
-    },
+  const user = await getAuthenticatedUserWith({
+    include: { industryInsight: true },
   });
-
-  if (!user) throw new Error("User not found");
 
   const prompt = `
     TASK: Improve a resume ${type} description for a ${user.industry} professional.
@@ -88,8 +82,8 @@ export async function improveWithAI({ current, type }) {
   `;
 
   try {
-    const improvedContent = await generateWithDeepSeek(prompt);
-    trackDeepSeekUsage(
+    const improvedContent = await generateWithOpenAI(prompt);
+    trackOpenAIUsage(
       prompt,
       improvedContent,
       "resume_improvement",
