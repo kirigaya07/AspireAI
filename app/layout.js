@@ -16,19 +16,31 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  document.documentElement.classList.add('dark');
+                  localStorage.setItem('theme', 'dark');
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
         <script
           async
           src="https://checkout.razorpay.com/v1/checkout.js"
         ></script>
       </head>
-      <body className={`${inter.className}`} suppressHydrationWarning>
+      <body className={`${inter.className} bg-background`} suppressHydrationWarning>
         <ClerkProvider appearance={{ baseTheme: dark }}>
           <ThemeProvider
             attribute="class"
             defaultTheme="dark"
-            enableSystem
+            enableSystem={false}
             disableTransitionOnChange
           >
             <Header />

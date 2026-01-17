@@ -2,7 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 
-const LoadingWrapper = ({ children, fallback, minLoadingTime = 5000 }) => {
+/**
+ * LoadingWrapper - Shows content after a short delay to prevent flash
+ * Reduced delay from 5000ms to 300ms for faster page transitions
+ */
+const LoadingWrapper = ({ children, fallback, minLoadingTime = 300 }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

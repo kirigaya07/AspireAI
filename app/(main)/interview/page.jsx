@@ -3,6 +3,9 @@ import StatsCards from "./_components/stats-cards";
 import PerformanceChart from "./_components/performace-chart";
 import QuizList from "./_components/quiz-list";
 
+// Force dynamic rendering since this page uses authentication
+export const dynamic = "force-dynamic";
+
 export default async function InterviewPrepPage() {
   const assessments = await getAssessments();
 

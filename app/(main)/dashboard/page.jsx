@@ -3,8 +3,10 @@ import { getUserOnboardingStatus } from "@/actions/user";
 import { redirect } from "next/navigation";
 import DashboardView from "./_components/dashboard-view";
 import { Suspense } from "react";
-import DashboardLoader from "./_components/dashboard-loader";
-import DelayedLoader from "@/components/delayed-loader";
+import SimpleLoader from "@/components/simple-loader";
+
+// Force dynamic rendering since this page uses authentication
+export const dynamic = "force-dynamic";
 
 // Separate content component that fetches data
 const DashboardContent = async () => {
@@ -25,9 +27,9 @@ const DashboardContent = async () => {
 
 const IndustryInsight = () => {
   return (
-    <DelayedLoader delay={5000} fallback={<DashboardLoader />}>
+    <Suspense fallback={<SimpleLoader text="Loading dashboard..." />}>
       <DashboardContent />
-    </DelayedLoader>
+    </Suspense>
   );
 };
 

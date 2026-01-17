@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import DashboardLoader from "./_components/dashboard-loader";
+import SimpleLoader from "@/components/simple-loader";
 
 const Layout = ({ children }) => {
   return (
@@ -7,7 +7,9 @@ const Layout = ({ children }) => {
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-6xl font-bold gradient-title">Industry Insight</h1>
       </div>
-      <Suspense fallback={<DashboardLoader />}>{children}</Suspense>
+      <Suspense fallback={<SimpleLoader text="Loading dashboard..." />}>
+        {children}
+      </Suspense>
     </div>
   );
 };

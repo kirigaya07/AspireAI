@@ -4,6 +4,9 @@ import { industries } from "@/data/industries";
 import { getUserOnboardingStatus } from "@/actions/user";
 import { redirect } from "next/navigation";
 
+// Force dynamic rendering since this page uses authentication
+export const dynamic = "force-dynamic";
+
 const OnboardingPage = async () => {
   const { isOnboarded } = await getUserOnboardingStatus();
 

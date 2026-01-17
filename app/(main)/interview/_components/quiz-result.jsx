@@ -23,19 +23,29 @@ export default function QuizResult({
       {/* Score Section */}
       <div className="text-center mb-6">
         <h3 className="text-4xl font-bold text-primary">
-          {result.quizScore.toFixed(1)}%
+          {typeof result.quizScore === 'number' ? result.quizScore.toFixed(0) : '0'}%
         </h3>
         <Progress
-          value={result.quizScore}
+          value={typeof result.quizScore === 'number' ? result.quizScore : 0}
           className="w-full h-3 rounded-lg bg-muted-foreground"
         />
-        <p className="text-sm text-muted-foreground mt-2">
-          {result.quizScore >= 80
-            ? "Excellent! Keep it up 💯"
-            : result.quizScore >= 50
-            ? "Good job! Improve a bit 👍"
-            : "Keep practicing! You'll do better next time 💪"}
-        </p>
+        <div className="mt-2 space-y-1">
+          <p className="text-sm text-muted-foreground">
+            {typeof result.quizScore === 'number' && result.quizScore >= 80
+              ? "Excellent! Keep it up 💯"
+              : typeof result.quizScore === 'number' && result.quizScore >= 50
+              ? "Good job! Improve a bit 👍"
+              : "Keep practicing! You'll do better next time 💪"}
+          </p>
+          {result.correctCount !== undefined && result.totalAnswered !== undefined && (
+            <p className="text-xs text-muted-foreground">
+              {result.correctCount} out of {result.totalAnswered} answered correctly
+              {result.totalQuestions && result.totalQuestions !== result.totalAnswered && (
+                <span className="block">({result.totalQuestions - result.totalAnswered} unanswered)</span>
+              )}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Improvement Tip */}

@@ -126,6 +126,15 @@ body {
   z-index: -1;
 }
 
+.dark .grid-background {
+  background: linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.05) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+}
+
 .grid-background::before {
   content: "";
   position: absolute;
@@ -134,4 +143,8 @@ body {
   width: 100%;
   height: 100%;
   background: radial-gradient(circle, transparent, rgba(0, 0, 0, 0.9));
+}
+
+.dark .grid-background::before {
+  background: radial-gradient(circle, transparent, rgba(0, 0, 0, 0.5));
 }

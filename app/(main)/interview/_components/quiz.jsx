@@ -17,44 +17,11 @@ import { toast } from "sonner";
 import { Loader2, ArrowRight } from "lucide-react";
 import QuizResult from "./quiz-result";
 
-// Custom themed loader component
+// Simple loader component
+import SimpleLoader from "@/components/simple-loader";
+
 const ThemedLoader = () => {
-  return (
-    <div className="flex flex-col justify-center items-center py-12 w-full">
-      <div className="relative w-16 h-16 mb-4">
-        <div
-          className="absolute inset-0 border-4 border-t-primary border-r-primary/70 border-b-primary/50 border-l-primary/30 rounded-full animate-spin"
-          style={{ animationDuration: "1.5s" }}
-        ></div>
-        <div
-          className="absolute inset-3 bg-gradient-to-tr from-primary to-primary/50 rounded-full opacity-75 animate-pulse"
-          style={{ animationDuration: "2s" }}
-        ></div>
-        <div className="absolute inset-[38%] bg-background rounded-full shadow-md"></div>
-      </div>
-      <div className="flex space-x-1 items-center text-lg font-medium">
-        <span className="text-foreground">Loading</span>
-        <span
-          className="animate-bounce text-primary"
-          style={{ animationDelay: "0s" }}
-        >
-          .
-        </span>
-        <span
-          className="animate-bounce text-primary"
-          style={{ animationDelay: "0.2s" }}
-        >
-          .
-        </span>
-        <span
-          className="animate-bounce text-primary"
-          style={{ animationDelay: "0.4s" }}
-        >
-          .
-        </span>
-      </div>
-    </div>
-  );
+  return <SimpleLoader text="Generating quiz questions..." />;
 };
 
 // Welcome card component - extracted for clarity
@@ -137,25 +104,33 @@ const Quiz = () => {
     [currentQuestion]
   );
 
-  const handleNext = useCallback(() => {
-    if (quizData && currentQuestion < quizData.length - 1) {
-      setCurrentQuestion((prev) => prev + 1);
-      setShowExplanation(false);
-    } else {
-      finishQuiz();
-    }
-  }, [currentQuestion, quizData]);
-
   const calculateScore = useCallback(() => {
-    if (!quizData) return 0;
+    if (!quizData || !answers || answers.length === 0) return 0;
 
     let correct = 0;
-    answers.forEach((answer, index) => {
-      if (answer === quizData[index].correctAnswer) {
-        correct++;
+    let totalAnswered = 0;
+    
+    quizData.forEach((question, index) => {
+      const userAnswer = answers[index];
+      
+      // Only count answered questions
+      if (userAnswer !== null && userAnswer !== undefined && userAnswer !== "") {
+        totalAnswered++;
+        // Normalize both answers for comparison (trim whitespace, handle case)
+        const normalizedUserAnswer = String(userAnswer).trim();
+        const normalizedCorrectAnswer = String(question.correctAnswer).trim();
+        
+        if (normalizedUserAnswer === normalizedCorrectAnswer) {
+          correct++;
+        }
       }
     });
-    return (correct / quizData.length) * 100;
+
+    // If no questions were answered, return 0
+    if (totalAnswered === 0) return 0;
+    
+    // Calculate percentage based on answered questions
+    return Math.round((correct / totalAnswered) * 100);
   }, [answers, quizData]);
 
   const finishQuiz = useCallback(async () => {
@@ -172,6 +147,15 @@ const Quiz = () => {
       setIsFinishing(false);
     }
   }, [quizData, answers, calculateScore, saveQuizResultFn]);
+
+  const handleNext = useCallback(() => {
+    if (quizData && currentQuestion < quizData.length - 1) {
+      setCurrentQuestion((prev) => prev + 1);
+      setShowExplanation(false);
+    } else {
+      finishQuiz();
+    }
+  }, [currentQuestion, quizData, finishQuiz]);
 
   const startNewQuiz = useCallback(() => {
     setCurrentQuestion(0);

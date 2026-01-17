@@ -165,18 +165,20 @@ model TokenTransaction {
 
 // Model for tracking payments
 model Payment {
-  id          String        @id @default(cuid())
-  userId      String
-  user        User          @relation(fields: [userId], references: [id])
-  amount      Float
-  currency    String        @default("INR")
-  razorpayId  String        @unique
-  status      PaymentStatus @default(PENDING)
-  tokensAdded Int
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id                String        @id @default(cuid())
+  userId            String
+  user              User          @relation(fields: [userId], references: [id])
+  amount            Float
+  currency          String        @default("INR")
+  razorpayId        String        @unique // Razorpay Order ID
+  razorpayPaymentId String?       // Razorpay Payment ID (stored after verification)
+  status            PaymentStatus @default(PENDING)
+  tokensAdded       Int
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   @@index([userId])
+  @@index([razorpayPaymentId]) // Index for faster lookups
 }
 
 // Enum for payment status

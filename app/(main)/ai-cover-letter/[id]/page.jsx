@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { getCoverLetter } from "@/actions/cover-letter";
 import CoverLetterPreview from "../_components/cover-letter-preview";
 
+// Force dynamic rendering since this page uses authentication
+export const dynamic = "force-dynamic";
+
 export default async function EditCoverLetterPage({ params }) {
   // Await the params object before accessing its properties
   const { id } = await params;

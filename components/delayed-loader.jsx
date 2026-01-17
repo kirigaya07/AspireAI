@@ -2,7 +2,11 @@
 
 import { useState, useEffect } from "react";
 
-export default function DelayedLoader({ children, fallback, delay = 5000 }) {
+/**
+ * DelayedLoader - Shows content after a short delay to prevent flash
+ * Reduced delay from 5000ms to 300ms for faster page transitions
+ */
+export default function DelayedLoader({ children, fallback, delay = 300 }) {
     const [showContent, setShowContent] = useState(false);
 
     useEffect(() => {

@@ -16,6 +16,12 @@ const nextConfig = {
     // This will allow the build to complete even with ESLint errors
     ignoreDuringBuilds: true,
   },
+  // Performance optimizations
+  experimental: {
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+  },
+  // Compress responses
+  compress: true,
 };
 
 export default nextConfig;
