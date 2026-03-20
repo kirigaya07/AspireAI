@@ -2,62 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
+    --background: 240 10% 4%;
+    --foreground: 210 40% 98%;
+    --card: 240 10% 5.5%;
+    --card-foreground: 210 40% 98%;
+    --popover: 240 10% 5%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 238 84% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 8% 10%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 240 8% 12%;
+    --muted-foreground: 215 20% 55%;
+    --accent: 262 80% 65%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    --border: 240 8% 13%;
+    --input: 240 8% 13%;
+    --ring: 238 84% 67%;
+    --radius: 0.75rem;
+    --chart-1: 238 84% 67%;
+    --chart-2: 262 80% 65%;
+    --chart-3: 160 60% 45%;
+    --chart-4: 43 96% 56%;
+    --chart-5: 340 75% 55%;
   }
+
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --background: 240 10% 4%;
+    --foreground: 210 40% 98%;
+    --card: 240 10% 5.5%;
+    --card-foreground: 210 40% 98%;
+    --popover: 240 10% 5%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 238 84% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 8% 10%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 240 8% 12%;
+    --muted-foreground: 215 20% 55%;
+    --accent: 262 80% 65%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
+    --border: 240 8% 13%;
+    --input: 240 8% 13%;
+    --ring: 238 84% 67%;
+    --chart-1: 238 84% 67%;
+    --chart-2: 262 80% 65%;
+    --chart-3: 160 60% 45%;
+    --chart-4: 43 96% 56%;
     --chart-5: 340 75% 55%;
   }
 }
@@ -67,26 +64,116 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
   }
 }
 
+/* ─── Gradient Utilities ─────────────────────────────── */
 @layer utilities {
-  .gradient {
-    @apply bg-gradient-to-b from-gray-400 via-gray-200 to-gray-600;
-  }
   .gradient-title {
-    background: linear-gradient(to right, #3b82f6, #8b5cf6);
+    background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+
+  .gradient-text-blue {
+    background: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-border {
+    position: relative;
+  }
+  .gradient-border::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(129, 140, 248, 0.4), rgba(192, 132, 252, 0.4));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: destination-out;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .glow {
+    box-shadow: 0 0 40px rgba(99, 102, 241, 0.15), 0 0 80px rgba(99, 102, 241, 0.05);
+  }
+
+  .glow-sm {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.12);
+  }
+
+  .card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.12);
+    border-color: rgba(99, 102, 241, 0.3);
+  }
 }
 
+/* ─── Animations ─────────────────────────────────────── */
 @keyframes gradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
+  50%       { box-shadow: 0 0 40px rgba(99, 102, 241, 0.4); }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes typing {
+  0%, 60%, 100% { opacity: 1; }
+  30%            { opacity: 0; }
 }
 
 .animate-gradient {
@@ -94,57 +181,114 @@ body {
   animation: gradient 4s ease infinite;
 }
 
-.hero-image-wrapper {
-  perspective: 1000px;
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease forwards;
 }
 
-.hero-image {
-  /* transform: rotateX(20deg) scale(0.9) translateY(-50); */
-  transform: rotateX(15deg) scale(1);
-  transition: transform 0.5s ease-out;
-  will-change: transform;
+.animate-fade-in {
+  animation: fadeIn 0.4s ease forwards;
 }
 
-.hero-image.scrolled {
-  transform: rotateX(0deg) scale(1) translateY(40px);
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }
 
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease forwards;
+}
+
+/* ─── Background Effects ─────────────────────────────── */
+.noise-bg {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+}
+
+.hero-glow {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.15), transparent),
+    radial-gradient(ellipse 50% 40% at 80% 50%, rgba(168, 85, 247, 0.08), transparent);
+}
+
+.mesh-bg {
+  background-color: hsl(var(--background));
+  background-image:
+    radial-gradient(at 27% 37%, rgba(99, 102, 241, 0.08) 0, transparent 50%),
+    radial-gradient(at 97% 21%, rgba(168, 85, 247, 0.06) 0, transparent 50%),
+    radial-gradient(at 52% 99%, rgba(79, 70, 229, 0.06) 0, transparent 50%),
+    radial-gradient(at 10% 29%, rgba(139, 92, 246, 0.05) 0, transparent 50%);
+}
+
+/* ─── Grid Background ────────────────────────────────── */
 .grid-background {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-      to right,
-      rgba(255, 255, 255, 0.1) 1px,
-      transparent 1px
-    ),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-  background-size: 50px 50px;
+  background:
+    linear-gradient(to right, rgba(129, 140, 248, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(129, 140, 248, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
   pointer-events: none;
   z-index: -1;
 }
-
-.dark .grid-background {
-  background: linear-gradient(
-      to right,
-      rgba(255, 255, 255, 0.05) 1px,
-      transparent 1px
-    ),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-}
-
 .grid-background::before {
   content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle, transparent, rgba(0, 0, 0, 0.9));
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, transparent 40%, hsl(var(--background)));
 }
 
-.dark .grid-background::before {
-  background: radial-gradient(circle, transparent, rgba(0, 0, 0, 0.5));
+/* ─── Scrollbar ──────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: hsl(var(--background)); }
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
+
+/* ─── Chat Bubble Animations ─────────────────────────── */
+.chat-bubble-ai {
+  animation: fadeInUp 0.3s ease forwards;
+  transform-origin: left bottom;
+}
+
+.chat-bubble-user {
+  animation: fadeInUp 0.3s ease forwards;
+  transform-origin: right bottom;
+}
+
+/* ─── Typing Indicator ───────────────────────────────── */
+.typing-dot {
+  animation: typing 1.4s ease-in-out infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* ─── ATS Score Ring ─────────────────────────────────── */
+.ats-ring {
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+/* ─── Resume PDF Template Reset ──────────────────────── */
+.resume-pdf-root {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 11pt;
+  line-height: 1.5;
+  color: #1a1a1a;
+  background: #ffffff;
+  padding: 32px 40px;
+  max-width: 800px;
+  margin: 0 auto;
 }

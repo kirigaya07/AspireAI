@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Zap, Check, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function BuyTokens({ packages }) {
   const [selectedPackage, setSelectedPackage] = useState(null);
@@ -10,23 +12,16 @@ export default function BuyTokens({ packages }) {
 
   const handlePurchase = async () => {
     if (!selectedPackage) return;
-
     setIsLoading(true);
     try {
-      // Create order
       const response = await fetch("/api/payments/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ packageId: selectedPackage.id }),
       });
-
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to create order");
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create order");
-      }
-
-      // Initialize Razorpay
       const options = {
         key: data.keyId,
         amount: data.amount,
@@ -35,7 +30,6 @@ export default function BuyTokens({ packages }) {
         description: `Purchase ${selectedPackage.tokens} tokens`,
         order_id: data.orderId,
         handler: async function (response) {
-          // Verify payment
           const verifyResponse = await fetch("/api/payments/verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -46,9 +40,7 @@ export default function BuyTokens({ packages }) {
               packageId: selectedPackage.id,
             }),
           });
-
           const verifyData = await verifyResponse.json();
-
           if (verifyResponse.ok) {
             router.refresh();
             alert("Payment successful! Tokens added to your account.");
@@ -56,13 +48,8 @@ export default function BuyTokens({ packages }) {
             alert("Payment verification failed. Please contact support.");
           }
         },
-        prefill: {
-          name: "User",
-          email: "user@example.com",
-        },
-        theme: {
-          color: "#3B82F6",
-        },
+        prefill: { name: "User", email: "user@example.com" },
+        theme: { color: "#6366f1" },
       };
 
       const razorpay = new window.Razorpay(options);
@@ -75,48 +62,86 @@ export default function BuyTokens({ packages }) {
     }
   };
 
-  return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-gray-500">Purchase Tokens</h2>
+  // Determine which package is "popular" (middle one)
+  const popularIdx = Math.floor(packages.length / 2);
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        {packages.map((pkg) => (
-          <div
-            key={pkg.id}
-            className={`border rounded-lg p-4 cursor-pointer transition-all ${
-              selectedPackage?.id === pkg.id
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-200 hover:border-blue-300"
-            }`}
-            onClick={() => setSelectedPackage(pkg)}
-          >
-            <h3 className="font-bold text-lg text-gray-500">
-              {pkg.description}
-            </h3>
-            <p className="text-2xl font-bold text-blue-600">₹{pkg.amount}</p>
-            <p className="text-gray-600">
-              {pkg.tokens.toLocaleString()} tokens
-            </p>
-          </div>
-        ))}
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {packages.map((pkg, idx) => {
+          const isSelected = selectedPackage?.id === pkg.id;
+          const isPopular = idx === popularIdx;
+
+          return (
+            <div
+              key={pkg.id}
+              onClick={() => setSelectedPackage(pkg)}
+              className={cn(
+                "relative rounded-2xl border p-5 cursor-pointer transition-all duration-200",
+                isSelected
+                  ? "border-indigo-500 bg-indigo-500/10 shadow-glow"
+                  : "border-border bg-card hover:border-indigo-500/50 hover:bg-indigo-500/5"
+              )}
+            >
+              {isPopular && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="px-3 py-0.5 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-semibold">
+                    Most Popular
+                  </span>
+                </div>
+              )}
+
+              <div className="flex items-start justify-between mb-3">
+                <div className="h-9 w-9 rounded-xl bg-indigo-500/15 flex items-center justify-center">
+                  <Zap className="h-4.5 w-4.5 text-indigo-400" />
+                </div>
+                {isSelected && (
+                  <div className="h-5 w-5 rounded-full bg-indigo-500 flex items-center justify-center">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                )}
+              </div>
+
+              <h3 className="font-semibold text-foreground mb-1">{pkg.description}</h3>
+              <p className="text-2xl font-bold text-indigo-400 mb-0.5">₹{pkg.amount}</p>
+              <p className="text-sm text-muted-foreground">{pkg.tokens.toLocaleString()} tokens</p>
+
+              <div className="mt-3 pt-3 border-t border-border/60">
+                <p className="text-xs text-muted-foreground">
+                  ₹{(pkg.amount / pkg.tokens * 1000).toFixed(2)} per 1000 tokens
+                </p>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <button
         onClick={handlePurchase}
         disabled={!selectedPackage || isLoading}
-        className={`w-full py-3 rounded-lg font-medium ${
+        className={cn(
+          "w-full py-3.5 rounded-2xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2",
           !selectedPackage || isLoading
-            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-            : "bg-blue-600 text-white hover:bg-blue-700"
-        }`}
+            ? "bg-muted/50 text-muted-foreground cursor-not-allowed"
+            : "bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:opacity-90 shadow-glow"
+        )}
       >
-        {isLoading ? "Processing..." : "Purchase Tokens"}
+        {isLoading ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Processing...
+          </>
+        ) : (
+          <>
+            <Zap className="h-4 w-4" />
+            {selectedPackage ? `Purchase ${selectedPackage.tokens.toLocaleString()} Tokens` : "Select a Package"}
+          </>
+        )}
       </button>
 
-      {/* <p className="text-sm text-gray-500 mt-4">
-        <br />
-        <code>{`<script src="https://checkout.razorpay.com/v1/checkout.js"></script>`}</code>
-      </p> */}
+      <p className="text-center text-xs text-muted-foreground">
+        Secured by Razorpay · Instant delivery · No expiry
+      </p>
     </div>
   );
 }

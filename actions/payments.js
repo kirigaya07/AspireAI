@@ -60,10 +60,10 @@ export async function getUserTokenInfo() {
 
 /**
  * Get token transaction history
- * @param {number} limit - Maximum number of transactions to return
+ * @param {number} limit - Maximum number of transactions to return (default: 50)
  * @returns {Promise<Array>} Array of transaction objects
  */
-export async function getTokenTransactionHistory(limit = 5) {
+export async function getTokenTransactionHistory(limit = 50) {
   const user = await getAuthenticatedUser();
 
   try {
@@ -213,26 +213,5 @@ export async function recordSuccessfulPayment(
   }
 }
 
-/**
- * Get user's token transaction history
- * @returns {Promise<Array>} Array of transaction objects
- */
-export async function getTokenTransactions() {
-  try {
-    const user = await getAuthenticatedUserWith({
-      select: { id: true },
-    });
-
-    // Get the user's token transactions
-    const transactions = await db.tokenTransaction.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: "desc" },
-      take: 50, // Limit to most recent 50 transactions
-    });
-
-    return transactions;
-  } catch (error) {
-    console.error("Error fetching token transactions:", error);
-    return [];
-  }
-}
+// getTokenTransactions is an alias for getTokenTransactionHistory for backwards compatibility
+export const getTokenTransactions = getTokenTransactionHistory;

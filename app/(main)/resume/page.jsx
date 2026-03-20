@@ -9,7 +9,12 @@ export const dynamic = "force-dynamic";
 // Resume page component
 const ResumeContent = async () => {
   const resume = await getResume();
-  return <ResumeBuilder initialContent={resume?.content} />;
+  return (
+    <ResumeBuilder
+      initialContent={resume?.content}
+      initialTemplate={resume?.templateStyle || "CLASSIC"}
+    />
+  );
 };
 
 const ResumePage = async () => {

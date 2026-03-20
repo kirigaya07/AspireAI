@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getUserTokenInfo } from "@/actions/payments";
+import { Zap } from "lucide-react";
 
 export default function TokenBalance() {
   const [tokenInfo, setTokenInfo] = useState({ tokens: 0 });
@@ -18,29 +19,17 @@ export default function TokenBalance() {
         setLoading(false);
       }
     }
-
     loadTokenInfo();
   }, []);
 
   if (loading) {
-    return <div className="animate-pulse bg-gray-200 h-10 w-32 rounded"></div>;
+    return <div className="animate-pulse bg-muted/50 h-9 w-32 rounded-xl" />;
   }
 
   return (
-    <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-5 w-5 text-blue-500"
-        viewBox="0 0 20 20"
-        fill="currentColor"
-      >
-        <path
-          fillRule="evenodd"
-          d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z"
-          clipRule="evenodd"
-        />
-      </svg>
-      <span className="font-medium">
+    <div className="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-xl">
+      <Zap className="h-4 w-4 text-indigo-400" />
+      <span className="text-sm font-medium text-indigo-300">
         {tokenInfo.tokens.toLocaleString()} tokens
       </span>
     </div>

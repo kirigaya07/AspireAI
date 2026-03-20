@@ -307,7 +307,7 @@ const DashboardView = ({ insights }) => {
               title="Industry Growth"
               value={insights.growthRate}
               icon={Activity}
-              color="text-blue-500"
+              color="text-indigo-400"
               secondaryValue={
                 <div className="mt-2">
                   <Progress value={insights.growthRate} className="h-2" />
@@ -393,19 +393,19 @@ const DashboardView = ({ insights }) => {
                   >
                     <CartesianGrid
                       strokeDasharray="3 3"
-                      stroke="#e2e8f0"
+                      stroke="rgba(255,255,255,0.06)"
                       vertical={false}
                     />
                     <XAxis
                       dataKey="name"
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fill: "#64748b", fontSize: 12 }}
+                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
                     />
                     <YAxis
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fill: "#64748b", fontSize: 12 }}
+                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
                       tickFormatter={(value) => `₹${value}LPA`}
                     />
                     <Tooltip content={<CustomTooltip />} />
@@ -445,10 +445,10 @@ const DashboardView = ({ insights }) => {
           {/* Industry Trends and Skills */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
+              <CardHeader className="bg-indigo-500/5 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-full">
-                    <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <div className="p-2 bg-indigo-500/15 rounded-xl">
+                    <TrendingUp className="w-5 h-5 text-indigo-400" />
                   </div>
                   <div>
                     <CardTitle>Key Industry Trends</CardTitle>
@@ -463,13 +463,13 @@ const DashboardView = ({ insights }) => {
                   {insights.keyTrends.map((trend, index) => (
                     <li key={index} className="flex gap-3 items-start group">
                       <div className="relative">
-                        <div className="h-6 w-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center mt-0.5 group-hover:bg-blue-200 transition-colors">
-                          <span className="text-blue-700 dark:text-blue-400 text-sm font-medium">
+                        <div className="h-6 w-6 rounded-full bg-indigo-500/15 flex items-center justify-center mt-0.5 group-hover:bg-indigo-500/25 transition-colors">
+                          <span className="text-indigo-400 text-sm font-medium">
                             {index + 1}
                           </span>
                         </div>
                         {index < insights.keyTrends.length - 1 && (
-                          <div className="absolute top-6 bottom-0 left-1/2 w-0.5 -ml-[1px] h-full bg-blue-100 dark:bg-blue-900/30" />
+                          <div className="absolute top-6 bottom-0 left-1/2 w-0.5 -ml-[1px] h-full bg-indigo-500/15" />
                         )}
                       </div>
                       <div className="bg-muted/50 p-3 rounded-lg flex-1 group-hover:bg-muted transition-colors">
@@ -486,10 +486,10 @@ const DashboardView = ({ insights }) => {
 
             <div className="space-y-6">
               <Card className="overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30">
+                <CardHeader className="bg-amber-500/5 border-b border-border">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-amber-100 dark:bg-amber-900 rounded-full">
-                      <Lightbulb className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                    <div className="p-2 bg-amber-500/15 rounded-xl">
+                      <Lightbulb className="w-5 h-5 text-amber-400" />
                     </div>
                     <div>
                       <CardTitle>Recommended Skills</CardTitle>

@@ -1,189 +1,198 @@
-// This is your Prisma schema file.
-// Learn more about Prisma schemas at: https://pris.ly/d/prisma-schema
-
-// If you need to optimize queries for performance or scalability, consider using Prisma Accelerate:
-// https://pris.ly/cli/accelerate-init
-
-// Generator block: This tells Prisma which client to generate for database access.
 generator client {
-  provider = "prisma-client-js" // Generates a JavaScript/TypeScript client for Prisma ORM.
+  provider = "prisma-client-js"
 }
 
-// Datasource block: Defines the database connection details.
 datasource db {
-  provider = "postgresql" // Specifies PostgreSQL as the database provider.
-  url      = env("DATABASE_URL") // Uses an environment variable for the database connection URL.
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-// Model definition for the "User" table in the database.
 model User {
-  id          String  @id @default(uuid()) // Primary key with a default UUID value.
-  clerkUserId String  @unique // Unique identifier from Clerk authentication.
-  email       String  @unique // Ensures each user has a unique email.
-  name        String? // Optional field for the user's name.
-  imageUrl    String? // Optional URL for the user's profile image.
-  industry    String? // Optional field representing the user's industry.
+  id          String  @id @default(uuid())
+  clerkUserId String  @unique
+  email       String  @unique
+  name        String?
+  imageUrl    String?
+  industry    String?
+  tokens      Int     @default(10000)
 
-  // Token tracking
-  tokens Int @default(10000) // Default 10000 tokens for new users
-
-  // Establishes a one-to-one relationship with the IndustryInsights model.
-  // The "industry" field references the "industry" field in IndustryInsights.
   industryInsight IndustryInsight? @relation(fields: [industry], references: [industry])
 
-  createdAt DateTime @default(now()) // Automatically sets the creation timestamp.
-  updatedAt DateTime @updatedAt // Updates timestamp whenever the record is modified.
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  // Additional profile-related fields:
-  bio        String? // Optional bio/description of the user.
-  experience Int? // Optional field representing years of experience.
+  bio        String?
+  experience Int?
+  skills     String[]
 
-  //Relations
-  skills      String[] // Array of skills that the user possesses.
-  assessments Assessment[] // Array of assessments taken by the user.
-  resume      Resume? // One-to-one relation with the Resume model.
-  coverLetter CoverLetter[] //Array of cover letters written by the user
-
-  // Add relations for token tracking
+  assessments       Assessment[]
+  resume            Resume?
+  coverLetter       CoverLetter[]
   tokenTransactions TokenTransaction[]
   payments          Payment[]
+  interviewSessions InterviewSession[]
 }
 
-// Model definition for the "Assessment" table.
-// This table stores quiz assessments for users, including their scores, questions attempted, and improvement tips.
 model Assessment {
-  id String @id @default(cuid()) // Unique identifier (Primary Key) using a CUID (collision-resistant ID).
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  quizScore      Float
+  questions      Json[]
+  category       String
+  improvementTip String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  userId String // Foreign key referencing the User model.
-  user   User   @relation(fields: [userId], references: [id]) // Establishes a relation with the User model.
-
-  quizScore      Float // Stores the user's score in the quiz.
-  questions      Json[] // Stores an array of questions attempted, using JSON format.
-  category       String // Represents the category or type of assessment.
-  improvementTip String // Provides a personalized tip for improving performance.
-
-  createdAt DateTime @default(now()) // Automatically records the timestamp when the record is created.
-  updatedAt DateTime @updatedAt // Updates the timestamp whenever the record is modified.
-
-  @@index([userId]) // Creates an index on the "userId" field to optimize queries filtering by user.
+  @@index([userId])
 }
 
-// Model definition for the "Resume" table.
-// This table stores users' resumes along with their ATS score and feedback.
 model Resume {
-  id String @id @default(cuid()) // Unique identifier (Primary Key) using a CUID (collision-resistant ID).
+  id            String  @id @default(cuid())
+  userId        String  @unique
+  user          User    @relation(fields: [userId], references: [id])
+  content       String  @db.Text
+  contentJson   Json?
+  atsScore      Float?
+  atsFeedback   String? @db.Text
+  atsKeywords   Json?
+  templateStyle String  @default("CLASSIC")
 
-  userId String @unique // Ensures each user can have only one resume.
-  user   User   @relation(fields: [userId], references: [id]) // Establishes a one-to-one relationship with the User model.
-
-  content String @db.Text // Stores the resume content in text format.
-
-  atsScore Float // Stores the ATS (Applicant Tracking System) score for resume evaluation.
-  feedback String // Provides feedback or suggestions for resume improvement.
-
-  createdAt DateTime @default(now()) // Automatically records the timestamp when the resume is created.
-  updatedAt DateTime @updatedAt // Updates the timestamp whenever the resume record is modified.
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
-
-// Model definition for the "CoverLetter" table.
-// This table stores cover letters written by users for job applications.
 
 model CoverLetter {
-  id String @id @default(cuid()) // Unique identifier (Primary Key) using a CUID (collision-resistant ID).
+  id             String  @id @default(cuid())
+  userId         String
+  user           User    @relation(fields: [userId], references: [id])
+  content        String
+  jobDescription String?
+  companyName    String
+  jobTitle       String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  userId String // Foreign key referencing the User model.
-  user   User   @relation(fields: [userId], references: [id]) // Establishes a many-to-one relationship with the User model.
-
-  content        String // Stores the cover letter content in Markdown format.
-  jobDescription String? // Optional field containing the job description.
-  companyName    String // Stores the name of the company the cover letter is addressed to.
-  jobTitle       String // Stores the job title for which the cover letter is written.
-
-  createdAt DateTime @default(now()) // Automatically records the timestamp when the cover letter is created.
-  updatedAt DateTime @updatedAt // Updates the timestamp whenever the record is modified.
-
-  @@index([userId]) // Creates an index on the "userId" field to optimize queries filtering by user.
+  @@index([userId])
 }
 
-// Model definition for the "IndustryInsight" table.
-// This table provides insights into various industries, including salary data, trends, and market conditions.
 model IndustryInsight {
-  id String @id @default(cuid()) // Unique identifier (Primary Key) using a CUID.
+  id                String        @id @default(cuid())
+  industry          String        @unique
+  users             User[]
+  salaryRanges      Json[]
+  growthRate        Float
+  demandLevel       DemandLevel
+  topSkills         String[]
+  marketOutlook     MarketOutlook
+  keyTrends         String[]
+  recommendedSkills String[]
+  lastUpdated       DateTime      @default(now())
+  nextUpdate        DateTime      @updatedAt
 
-  industry String @unique // Unique industry name (e.g., "Software Development", "Finance").
-
-  users User[] // Establishes a one-to-many relationship with the User model.
-
-  // Salary-related data for different roles within the industry.
-  salaryRanges Json[] // Stores an array of salary objects with fields: role (string), min (float), max (float), median (float), location (optional string).
-
-  // Industry growth and demand insights.
-  growthRate  Float // Represents the projected growth rate of the industry.
-  demandLevel DemandLevel // Enum indicating demand level (HIGH, MEDIUM, LOW).
-  topSkills   String[] // List of key skills in high demand for this industry.
-
-  // Market conditions and outlook.
-  marketOutlook MarketOutlook // Enum indicating overall industry outlook ("Positive", "Neutral", "Negative").
-  keyTrends     String[] // Array of key trends affecting the industry.
-
-  // Recommended skills for professionals looking to enter or grow in the industry.
-  recommendedSkills String[] // Suggested skills relevant to the industry.
-
-  // Timestamps for data updates.
-  lastUpdated DateTime @default(now()) // Timestamp when the record was last updated.
-  nextUpdate  DateTime @updatedAt // Timestamp scheduled for the next update.
-
-  @@index([industry]) // Index on the "industry" field to optimize queries.
+  @@index([industry])
 }
 
-// Enum representing demand levels in an industry.
-enum DemandLevel {
-  HIGH
-  MEDIUM
-  LOW
+model InterviewSession {
+  id           String             @id @default(cuid())
+  userId       String
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobTitle     String
+  company      String?
+  type         InterviewType      @default(MIXED)
+  difficulty   Difficulty         @default(MEDIUM)
+  status       SessionStatus      @default(ACTIVE)
+  messages     InterviewMessage[]
+  score        Int?
+  feedback     String?            @db.Text
+  strengths    String[]
+  improvements String[]
+  duration     Int?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([userId])
 }
 
-// Enum representing the overall market outlook of an industry.
-enum MarketOutlook {
-  POSITIVE
-  NEUTRAL
-  NEGATIVE
+model InterviewMessage {
+  id        String          @id @default(cuid())
+  sessionId String
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      MessageRole
+  content   String          @db.Text
+  createdAt DateTime        @default(now())
+
+  @@index([sessionId])
 }
 
-// Model for tracking token usage and purchases
 model TokenTransaction {
   id          String   @id @default(cuid())
   userId      String
   user        User     @relation(fields: [userId], references: [id])
-  amount      Int // Positive for additions, negative for consumption
-  description String // E.g., "Generated Cover Letter", "Token Purchase"
-  featureType String? // Optional field to categorize the transaction
+  amount      Int
+  description String
+  featureType String?
   createdAt   DateTime @default(now())
 
   @@index([userId])
 }
 
-// Model for tracking payments
 model Payment {
   id                String        @id @default(cuid())
   userId            String
   user              User          @relation(fields: [userId], references: [id])
   amount            Float
   currency          String        @default("INR")
-  razorpayId        String        @unique // Razorpay Order ID
-  razorpayPaymentId String?       // Razorpay Payment ID (stored after verification)
+  razorpayId        String        @unique
+  razorpayPaymentId String?
   status            PaymentStatus @default(PENDING)
   tokensAdded       Int
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
   @@index([userId])
-  @@index([razorpayPaymentId]) // Index for faster lookups
+  @@index([razorpayPaymentId])
 }
 
-// Enum for payment status
+enum DemandLevel {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum MarketOutlook {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+}
+
 enum PaymentStatus {
   PENDING
   COMPLETED
   FAILED
+}
+
+enum InterviewType {
+  BEHAVIORAL
+  TECHNICAL
+  SYSTEM_DESIGN
+  HR
+  MIXED
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
 }

@@ -40,7 +40,7 @@ export default function QuizList({ assessments }) {
             </div>
             <Button
               onClick={() => router.push("/interview/mock")}
-              className="bg-primary  text-sm font-semibold rounded-md transition-all hover:bg-primary/90"
+              className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold rounded-xl border-0 hover:opacity-90 transition-opacity"
             >
               Start New Quiz
             </Button>
@@ -53,7 +53,7 @@ export default function QuizList({ assessments }) {
             {assessments?.map((assessment, i) => (
               <Card
                 key={assessment.id}
-                className="cursor-pointer border border-border bg-muted/20 rounded-md transition-all duration-300 hover:scale-[1.02] hover:bg-card hover:shadow-lg"
+                className="cursor-pointer border border-border bg-card/50 rounded-2xl transition-all duration-200 hover:bg-card hover:shadow-card hover:border-indigo-500/30"
                 onClick={() => setSelectedQuiz(assessment)}
               >
                 <CardHeader className="p-4">
@@ -86,9 +86,9 @@ export default function QuizList({ assessments }) {
 
                 {/* Improvement Tip */}
                 {assessment.improvementTip && (
-                  <CardContent className="p-4 border-t border-border text-sm bg-muted/20 rounded-b-md">
-                    <p className="text-primary font-medium mb-1">
-                      💡 Improvement Tip:
+                  <CardContent className="p-4 border-t border-border text-sm bg-amber-500/5">
+                    <p className="text-amber-400 font-medium mb-1 text-xs uppercase tracking-wide">
+                      Improvement Tip
                     </p>
                     <p className="text-muted-foreground">
                       {assessment.improvementTip}
