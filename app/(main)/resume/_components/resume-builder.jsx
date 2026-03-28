@@ -20,6 +20,8 @@ import {
   ChevronDown,
   ChevronUp,
   RefreshCw,
+  Code2,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import MDEditor from "@uiw/react-md-editor";
@@ -37,6 +39,7 @@ import { useUser } from "@clerk/nextjs";
 import { entriesToMarkdown } from "@/app/lib/helper";
 import { resumeSchema } from "@/app/lib/schema";
 import { TEMPLATES, generateResumeHTML } from "@/lib/latex-templates";
+import { generateLatex } from "@/lib/latex-generator";
 import { cn } from "@/lib/utils";
 
 // ── Template Picker ──────────────────────────────────────────────
@@ -298,6 +301,41 @@ export default function ResumeBuilder({ initialContent, initialTemplate }) {
     await saveResumeFn(content);
   };
 
+  const downloadTex = () => {
+    if (!previewContent) return toast.error("Build your resume first.");
+    const tex = generateLatex(previewContent, template);
+    const blob = new Blob([tex], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "resume.tex";
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("resume.tex downloaded!");
+  };
+
+  const openInOverleaf = () => {
+    if (!previewContent) return toast.error("Build your resume first.");
+    const tex = generateLatex(previewContent, template);
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = "https://www.overleaf.com/docs";
+    form.target = "_blank";
+    const snip = document.createElement("input");
+    snip.type = "hidden";
+    snip.name = "snip";
+    snip.value = tex;
+    const engine = document.createElement("input");
+    engine.type = "hidden";
+    engine.name = "engine";
+    engine.value = "pdflatex";
+    form.appendChild(snip);
+    form.appendChild(engine);
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+  };
+
   const generatePDF = async () => {
     setIsGenerating(true);
     try {
@@ -340,7 +378,7 @@ export default function ResumeBuilder({ initialContent, initialTemplate }) {
             Build, optimize, and export your professional resume
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant="outline"
             onClick={() => onSubmit()}
@@ -349,6 +387,24 @@ export default function ResumeBuilder({ initialContent, initialTemplate }) {
           >
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
             Save
+          </Button>
+          <Button
+            variant="outline"
+            onClick={downloadTex}
+            disabled={!previewContent}
+            className="rounded-xl border-border"
+          >
+            <Code2 className="h-4 w-4 mr-2" />
+            Download .tex
+          </Button>
+          <Button
+            variant="outline"
+            onClick={openInOverleaf}
+            disabled={!previewContent}
+            className="rounded-xl border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/60"
+          >
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Open in Overleaf
           </Button>
           <Button
             onClick={generatePDF}
