@@ -92,7 +92,7 @@ export async function POST(request) {
       order = await razorpay.orders.create({
         amount: Math.round(tokenPackage.amount * 100), // Amount in paise (ensure integer)
         currency: "INR",
-        receipt: `receipt_${user.id}_${Date.now()}`,
+        receipt: `r_${Date.now().toString(36)}`,
         notes: {
           userId: user.id,
           packageId: tokenPackage.id,
