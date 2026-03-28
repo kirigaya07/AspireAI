@@ -170,6 +170,18 @@ enum PaymentStatus {
   PENDING
   COMPLETED
   FAILED
+  REFUNDED
+}
+
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  eventId     String   @unique  // Razorpay event/payment ID used for deduplication
+  eventType   String
+  processedAt DateTime @default(now())
+  success     Boolean
+  errorMsg    String?
+
+  @@index([eventId])
 }
 
 enum InterviewType {

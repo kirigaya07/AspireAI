@@ -219,20 +219,37 @@ const Header = async () => {
             </SignedOut>
 
             <SignedIn>
-              {/* Token balance */}
-              {tokenBalance != null && (
-                <Link href="/tokens">
-                  <div className="hidden sm:flex items-center gap-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1.5 text-xs font-medium text-indigo-300 hover:bg-indigo-500/15 transition-colors cursor-pointer">
-                    <Zap className="h-3 w-3" />
-                    {formatTokens(tokenBalance)}
-                  </div>
-                </Link>
-              )}
+              {/* Token balance — color-coded by level */}
+              {tokenBalance != null && (() => {
+                const isLow = tokenBalance < 1000;
+                const isWarning = tokenBalance >= 1000 && tokenBalance < 3000;
+                return (
+                  <Link href="/tokens">
+                    <div className={cn(
+                      "hidden sm:flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors cursor-pointer border",
+                      isLow
+                        ? "bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-rose-500/15 animate-pulse"
+                        : isWarning
+                        ? "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/15"
+                        : "bg-indigo-500/10 border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/15"
+                    )}>
+                      <Zap className="h-3 w-3" />
+                      {formatTokens(tokenBalance)}
+                      {isLow && <span className="ml-0.5 text-[10px] font-semibold">Low</span>}
+                    </div>
+                  </Link>
+                );
+              })()}
 
               <Link href="/tokens" className="hidden sm:block">
                 <Button
                   size="sm"
-                  className="h-8 px-3 text-xs bg-gradient-brand text-white border-0 rounded-lg hover:opacity-90 transition-opacity"
+                  className={cn(
+                    "h-8 px-3 text-xs border-0 rounded-lg transition-opacity",
+                    tokenBalance != null && tokenBalance < 1000
+                      ? "bg-rose-500 hover:bg-rose-600 text-white"
+                      : "bg-gradient-brand text-white hover:opacity-90"
+                  )}
                 >
                   + Tokens
                 </Button>

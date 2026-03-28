@@ -17,13 +17,14 @@ export async function getTokenPackages() {
  * Get user's payment history
  * @returns {Promise<Array>} Array of payment objects
  */
-export async function getPaymentHistory() {
+export async function getPaymentHistory(limit = 20) {
   const user = await getAuthenticatedUser();
 
   try {
     const payments = await db.payment.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
+      take: limit,
     });
     return payments;
   } catch (error) {
@@ -37,25 +38,16 @@ export async function getPaymentHistory() {
  * @returns {Promise<Object>} Object with tokens and packages
  */
 export async function getUserTokenInfo() {
-  try {
-    const user = await getAuthenticatedUserWith({
-      select: { tokens: true },
-    });
+  const user = await getAuthenticatedUserWith({
+    select: { tokens: true },
+  });
 
-    const packages = await getTokenPackages();
+  const packages = await getTokenPackages();
 
-    return {
-      tokens: user.tokens || 10000,
-      packages,
-    };
-  } catch (error) {
-    console.error("Error fetching user token info:", error);
-    // Return mock data if there's an error
-    return {
-      tokens: 10000,
-      packages: await getTokenPackages(),
-    };
-  }
+  return {
+    tokens: user.tokens ?? 0,
+    packages,
+  };
 }
 
 /**

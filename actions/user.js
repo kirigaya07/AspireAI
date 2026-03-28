@@ -20,34 +20,33 @@ export async function updateUser(data) {
   const user = await getAuthenticatedUser();
 
   try {
-    // Perform database operations within a transaction to ensure data consistency.
+    // Check if industry insight already exists BEFORE opening a transaction.
+    // generateAIInsights is an AI call that can take 10–30s — running it inside
+    // a transaction would time out the 10s limit.
+    let existingInsight = await db.industryInsight.findUnique({
+      where: { industry: data.industry },
+    });
+
+    // If missing, generate and persist it outside the transaction.
+    if (!existingInsight) {
+      const insights = await generateAIInsights(data.industry);
+      // Use upsert in case a concurrent request created it while we were generating.
+      existingInsight = await db.industryInsight.upsert({
+        where: { industry: data.industry },
+        update: {},
+        create: {
+          industry: data.industry,
+          ...insights,
+          nextUpdate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      });
+    }
+
+    // Now run a fast, focused transaction — only DB writes, no AI calls.
     const result = await db.$transaction(
       async (tx) => {
-        // Check if an industry insight record already exists for the given industry.
-        let industryInsight = await tx.industryInsight.findUnique({
-          where: {
-            industry: data.industry,
-          },
-        });
-
-        // If no industry insight exists, create a new one with default values.
-        if (!industryInsight) {
-          const insights = await generateAIInsights(data.industry);
-
-          industryInsight = await tx.industryInsight.create({
-            data: {
-              industry: data.industry,
-              ...insights,
-              nextUpdate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-            },
-          });
-        }
-
-        // Update the user's profile with the provided data.
-        const updateUser = await tx.user.update({
-          where: {
-            id: user.id,
-          },
+        const updatedUser = await tx.user.update({
+          where: { id: user.id },
           data: {
             industry: data.industry,
             experience: data.experience,
@@ -55,18 +54,15 @@ export async function updateUser(data) {
             skills: data.skills,
           },
         });
-
-        return { updateUser, industryInsight }; // Return the updated user and industry insight data.
+        return { updateUser: updatedUser, industryInsight: existingInsight };
       },
-      {
-        timeout: 10000, // Set a transaction timeout of 10 seconds.
-      }
+      { timeout: 10000 }
     );
 
-    return { success: true, ...result }; // Return the final transaction result.
+    return { success: true, ...result };
   } catch (error) {
-    console.error("Error updating user and industry", error.message);
-    throw new Error("Failed to update profile"); // Throw a user-friendly error message.
+    console.error("Error updating user and industry:", error.message);
+    throw new Error("Failed to update profile");
   }
 }
 

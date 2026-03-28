@@ -2,13 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import { Zap, Check, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export default function BuyTokens({ packages }) {
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { user } = useUser();
 
   const handlePurchase = async () => {
     if (!selectedPackage) return;
@@ -30,25 +33,31 @@ export default function BuyTokens({ packages }) {
         description: `Purchase ${selectedPackage.tokens} tokens`,
         order_id: data.orderId,
         handler: async function (response) {
-          const verifyResponse = await fetch("/api/payments/verify", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              packageId: selectedPackage.id,
-            }),
-          });
-          const verifyData = await verifyResponse.json();
-          if (verifyResponse.ok) {
-            router.refresh();
-            alert("Payment successful! Tokens added to your account.");
-          } else {
-            alert("Payment verification failed. Please contact support.");
+          try {
+            const verifyResponse = await fetch("/api/payments/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                packageId: selectedPackage.id,
+              }),
+            });
+            if (verifyResponse.ok) {
+              toast.success(`${selectedPackage.tokens.toLocaleString()} tokens added to your account!`);
+              router.refresh();
+            } else {
+              toast.error("Payment verification failed. Please contact support if tokens weren't added.");
+            }
+          } catch {
+            toast.error("Could not verify payment. Contact support if tokens weren't added.");
           }
         },
-        prefill: { name: "User", email: "user@example.com" },
+        prefill: {
+          name: user?.fullName || "",
+          email: user?.primaryEmailAddress?.emailAddress || "",
+        },
         theme: { color: "#6366f1" },
       };
 
@@ -56,7 +65,7 @@ export default function BuyTokens({ packages }) {
       razorpay.open();
     } catch (error) {
       console.error("Payment error:", error);
-      alert(error.message || "Something went wrong");
+      toast.error("Could not initiate payment. Please try again.");
     } finally {
       setIsLoading(false);
     }

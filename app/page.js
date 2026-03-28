@@ -87,6 +87,8 @@ const tokenPackages = [
     name: "Starter",
     tokens: "10,000",
     price: "₹499",
+    perToken: "₹0.050 / token",
+    savings: null,
     description: "Perfect for active job seekers",
     features: [
       "~50 AI resume improvements",
@@ -101,6 +103,8 @@ const tokenPackages = [
     name: "Professional",
     tokens: "25,000",
     price: "₹999",
+    perToken: "₹0.040 / token",
+    savings: "Save 20%",
     description: "For serious career changers",
     features: [
       "~125 AI resume improvements",
@@ -115,6 +119,8 @@ const tokenPackages = [
     name: "Elite",
     tokens: "50,000",
     price: "₹1,799",
+    perToken: "₹0.036 / token",
+    savings: "Save 28%",
     description: "For career coaches & power users",
     features: [
       "~250 AI resume improvements",
@@ -123,7 +129,8 @@ const tokenPackages = [
       "All features unlocked",
     ],
     highlight: false,
-    cta: "Go Elite",
+    bestValue: true,
+    cta: "Best Value",
   },
 ];
 
@@ -407,51 +414,96 @@ export default function Home() {
                 className={`relative rounded-2xl p-6 border transition-all duration-300 ${
                   pkg.highlight
                     ? "border-indigo-500/50 bg-gradient-to-b from-indigo-500/10 to-card shadow-glow scale-[1.02]"
+                    : pkg.bestValue
+                    ? "border-violet-500/40 bg-gradient-to-b from-violet-500/5 to-card hover:border-violet-500/60"
                     : "border-border bg-card hover:border-indigo-500/30"
                 }`}
               >
+                {/* Top badge */}
                 {pkg.highlight && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-gradient-brand text-white border-0 shadow-glow-sm">
-                      Most Popular
-                    </Badge>
+                    <Badge className="bg-gradient-brand text-white border-0 shadow-glow-sm">Most Popular</Badge>
                   </div>
                 )}
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold mb-1">{pkg.name}</h3>
+                {pkg.bestValue && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <Badge className="bg-violet-600 text-white border-0">Best Value</Badge>
+                  </div>
+                )}
+
+                <div className="mb-5">
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="text-xl font-bold">{pkg.name}</h3>
+                    {pkg.savings && (
+                      <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                        {pkg.savings}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground mb-4">{pkg.description}</p>
                   <div className="flex items-baseline gap-1">
                     <span className="text-4xl font-bold">{pkg.price}</span>
                     <span className="text-muted-foreground text-sm">one-time</span>
                   </div>
-                  <p className="text-sm text-indigo-400 mt-1 font-medium">{pkg.tokens} tokens</p>
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <p className="text-sm text-indigo-400 font-medium">{pkg.tokens} tokens</p>
+                    <span className="text-xs text-muted-foreground">{pkg.perToken}</span>
+                  </div>
                 </div>
-                <ul className="space-y-2.5 mb-6">
+
+                <ul className="space-y-2.5 mb-5">
                   {pkg.features.map((feature) => (
                     <li key={feature} className="flex items-center gap-2.5 text-sm">
                       <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
                       <span className="text-muted-foreground">{feature}</span>
                     </li>
                   ))}
+                  <li className="flex items-center gap-2.5 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                    <span className="text-emerald-400 font-medium">Tokens never expire</span>
+                  </li>
                 </ul>
+
                 <Link href="/tokens">
                   <Button
                     className={`w-full rounded-xl ${
                       pkg.highlight
                         ? "bg-gradient-brand text-white border-0 hover:opacity-90"
+                        : pkg.bestValue
+                        ? "bg-violet-600 hover:bg-violet-700 text-white border-0"
                         : "bg-secondary hover:bg-muted border border-border"
                     }`}
                   >
-                    {pkg.highlight ? pkg.cta : "Buy Tokens"}
+                    {pkg.cta}
                   </Button>
                 </Link>
               </div>
             ))}
           </div>
 
-          <p className="text-center text-sm text-muted-foreground mt-8">
+          {/* Token usage reference */}
+          <div className="max-w-3xl mx-auto mt-10 rounded-2xl border border-border bg-card/50 p-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4 text-center">
+              What can you do with tokens?
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { action: "Resume improvement", cost: "~200 tokens" },
+                { action: "Cover letter", cost: "~500 tokens" },
+                { action: "Interview session", cost: "~1,000 tokens" },
+                { action: "ATS score analysis", cost: "~300 tokens" },
+              ].map(({ action, cost }) => (
+                <div key={action} className="text-center p-3 rounded-xl bg-muted/50">
+                  <p className="text-sm font-medium mb-1">{action}</p>
+                  <p className="text-xs text-indigo-400 font-mono">{cost}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <p className="text-center text-sm text-muted-foreground mt-6">
             New accounts get <span className="text-emerald-400 font-medium">10,000 free tokens</span> — no payment required.
-            Powered by <span className="text-indigo-400">Razorpay</span> with instant delivery.
+            Secured by <span className="text-indigo-400">Razorpay</span> · Instant delivery · No subscription.
           </p>
         </div>
       </section>
