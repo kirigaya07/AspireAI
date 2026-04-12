@@ -33,6 +33,7 @@ export default function RootLayout({ children }) {
             __html: `(function(){try{document.documentElement.classList.add('dark');localStorage.setItem('theme','dark');}catch(e){}})();`,
           }}
         />
+        <script src="https://checkout.razorpay.com/v1/checkout.js" />
       </head>
       <body
         className={`${inter.variable} font-sans bg-background antialiased`}
