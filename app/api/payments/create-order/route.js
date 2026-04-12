@@ -76,14 +76,36 @@ export async function POST(request) {
     });
 
     if (existingPendingPayment) {
-      // Return existing order instead of creating a new one
-      return NextResponse.json({
-        orderId: existingPendingPayment.razorpayId,
-        amount: existingPendingPayment.amount * 100, // Convert to paise
-        currency: existingPendingPayment.currency || "INR",
-        keyId: process.env.RAZORPAY_KEY_ID,
-        message: "Using existing pending order",
-      });
+      // Check if Razorpay already has this order paid — if so, skip reuse
+      try {
+        const rzpOrder = await razorpay.orders.fetch(existingPendingPayment.razorpayId);
+        if (rzpOrder.status === "paid") {
+          // Mark it complete in DB so it doesn't block future purchases
+          await db.payment.update({
+            where: { id: existingPendingPayment.id },
+            data: { status: "COMPLETED" },
+          });
+          // Fall through to create a fresh order
+        } else {
+          // Order is genuinely still open — reuse it
+          return NextResponse.json({
+            orderId: existingPendingPayment.razorpayId,
+            amount: existingPendingPayment.amount * 100,
+            currency: existingPendingPayment.currency || "INR",
+            keyId: process.env.RAZORPAY_KEY_ID,
+            message: "Using existing pending order",
+          });
+        }
+      } catch {
+        // Razorpay fetch failed — safe to reuse the existing order
+        return NextResponse.json({
+          orderId: existingPendingPayment.razorpayId,
+          amount: existingPendingPayment.amount * 100,
+          currency: existingPendingPayment.currency || "INR",
+          keyId: process.env.RAZORPAY_KEY_ID,
+          message: "Using existing pending order",
+        });
+      }
     }
 
     // Step 6: Create Razorpay order
