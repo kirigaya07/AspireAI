@@ -24,8 +24,13 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
-import MDEditor from "@uiw/react-md-editor";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
+
+const MDEditor = dynamic(() => import("@uiw/react-md-editor"), {
+  ssr: false,
+  loading: () => <div className="h-64 rounded-lg bg-muted animate-pulse" />,
+});
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";

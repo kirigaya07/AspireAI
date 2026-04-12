@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import MDEditor from "@uiw/react-md-editor";
+import dynamic from "next/dynamic";
+
+const MDEditor = dynamic(() => import("@uiw/react-md-editor"), {
+  ssr: false,
+  loading: () => <div className="h-64 rounded-lg bg-muted animate-pulse" />,
+});
 import { Button } from "@/components/ui/button";
 import { Save, Edit } from "lucide-react";
 import { toast } from "sonner";
