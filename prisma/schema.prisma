@@ -173,6 +173,15 @@ enum PaymentStatus {
   REFUNDED
 }
 
+model RateLimit {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  createdAt DateTime @default(now())
+
+  @@index([userId, action, createdAt])
+}
+
 model WebhookEvent {
   id          String   @id @default(cuid())
   eventId     String   @unique  // Razorpay event/payment ID used for deduplication

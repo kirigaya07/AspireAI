@@ -4,6 +4,7 @@ import { db } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/auth-utils";
 import { generateWithOpenAI } from "@/lib/openai";
 import { trackOpenAIUsage } from "@/lib/ai-helpers";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 /**
  * Generate a cover letter using AI
@@ -15,6 +16,7 @@ import { trackOpenAIUsage } from "@/lib/ai-helpers";
  */
 export async function generateCoverLetter(data) {
   const user = await getAuthenticatedUser();
+  await checkRateLimit(user.id, "ai.cover-letter", 5, 60_000);
 
   const prompt = `
     Write a professional cover letter for a ${data.jobTitle} position at ${

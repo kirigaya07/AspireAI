@@ -6,6 +6,7 @@ import { generateWithOpenAI } from "@/lib/openai";
 import { revalidatePath } from "next/cache";
 import { trackOpenAIUsage } from "@/lib/ai-helpers";
 import { extractJSONFromText } from "@/lib/ai-helpers";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 /**
  * Save or update the user's resume content.
@@ -62,6 +63,7 @@ export async function improveWithAI({ current, type }) {
   const user = await getAuthenticatedUserWith({
     include: { industryInsight: true },
   });
+  await checkRateLimit(user.id, "ai.resume.improve", 10, 60_000);
 
   const prompt = `
     TASK: Improve a resume ${type} description for a ${user.industry} professional.
@@ -103,6 +105,7 @@ export async function improveWithAI({ current, type }) {
  */
 export async function analyzeATS({ jobDescription }) {
   const user = await getAuthenticatedUserWith({ include: { industryInsight: true } });
+  await checkRateLimit(user.id, "ai.resume.ats", 5, 60_000);
 
   const resume = await db.resume.findUnique({
     where: { userId: user.id },

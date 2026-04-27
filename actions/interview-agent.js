@@ -6,6 +6,7 @@ import { generateWithOpenAI } from "@/lib/openai";
 import { consumeTokens } from "@/lib/tokens";
 import { buildInterviewerSystemPrompt, buildScoringPrompt } from "@/lib/interview-prompts";
 import { extractJSONFromText } from "@/lib/ai-helpers";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { revalidatePath } from "next/cache";
 
 const SESSION_TOKEN_COST = 200;
@@ -83,6 +84,7 @@ export async function createInterviewSession({ jobTitle, company, type, difficul
  */
 export async function sendInterviewMessage(sessionId, userMessage) {
   const user = await getAuthenticatedUserWith({ include: { industryInsight: true } });
+  await checkRateLimit(user.id, "ai.interview.message", 30, 60_000);
 
   const session = await db.interviewSession.findFirst({
     where: { id: sessionId, userId: user.id, status: "ACTIVE" },
