@@ -1,4 +1,5 @@
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import Header from "@/components/header";
@@ -33,7 +34,6 @@ export default function RootLayout({ children }) {
             __html: `(function(){try{document.documentElement.classList.add('dark');localStorage.setItem('theme','dark');}catch(e){}})();`,
           }}
         />
-        <script src="https://checkout.razorpay.com/v1/checkout.js" />
       </head>
       <body
         className={`${inter.variable} font-sans bg-background antialiased`}
@@ -50,6 +50,7 @@ export default function RootLayout({ children }) {
             <main className="min-h-screen">{children}</main>
             <Toaster richColors position="bottom-right" />
             <Footer />
+            <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
           </ThemeProvider>
         </ClerkProvider>
       </body>
