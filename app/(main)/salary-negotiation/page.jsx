@@ -1,22 +1,20 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import SessionSetup from "./_components/session-setup";
-import ChatInterface from "./_components/chat-interface";
-import SessionResults from "./_components/session-results";
+import NegotiationSetup from "./_components/negotiation-setup";
+import NegotiationChat from "./_components/negotiation-chat";
+import NegotiationResults from "./_components/negotiation-results";
 import {
-  createInterviewSession,
-  sendInterviewMessage,
-  endInterviewSession,
-  generateSessionFeedback,
-  analyzeResumeGaps,
-} from "@/actions/interview-agent";
+  createNegotiationSession,
+  sendNegotiationMessage,
+  endNegotiationSession,
+  generateNegotiationSummary,
+} from "@/actions/negotiation";
 import { toast } from "sonner";
 
-// Three phases: setup → chat → results
 const PHASE = { SETUP: "setup", CHAT: "chat", RESULTS: "results" };
 
-export default function InterviewAgentPage() {
+export default function SalaryNegotiationPage() {
   const [phase, setPhase] = useState(PHASE.SETUP);
   const [session, setSession] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -24,27 +22,25 @@ export default function InterviewAgentPage() {
 
   const handleStart = useCallback(async (config) => {
     try {
-      const result = await createInterviewSession(config);
+      const result = await createNegotiationSession(config);
       setSession({
         id: result.sessionId,
         jobTitle: config.jobTitle,
         company: config.company,
-        type: config.type,
-        difficulty: config.difficulty,
+        offerDetails: config.offerDetails,
         status: "ACTIVE",
       });
       setMessages([{ role: "ASSISTANT", content: result.openingMessage }]);
       setPhase(PHASE.CHAT);
     } catch (err) {
-      toast.error(err.message || "Failed to start interview session.");
+      toast.error(err.message || "Failed to start negotiation session.");
     }
   }, []);
 
   const handleSend = useCallback(async (text) => {
-    const result = await sendInterviewMessage(session.id, text);
+    const result = await sendNegotiationMessage(session.id, text);
     if (result.isComplete) {
-      setSession(prev => ({ ...prev, status: "COMPLETED" }));
-      // Small delay before switching to results
+      setSession((prev) => ({ ...prev, status: "COMPLETED" }));
       setTimeout(() => setPhase(PHASE.RESULTS), 1500);
     }
     return result;
@@ -53,10 +49,10 @@ export default function InterviewAgentPage() {
   const handleEnd = useCallback(async (sessionId) => {
     setIsEnding(true);
     try {
-      await endInterviewSession(sessionId);
-      setSession(prev => ({ ...prev, status: "COMPLETED" }));
+      await endNegotiationSession(sessionId);
+      setSession((prev) => ({ ...prev, status: "COMPLETED" }));
       setPhase(PHASE.RESULTS);
-    } catch (err) {
+    } catch {
       toast.error("Failed to end session.");
     } finally {
       setIsEnding(false);
@@ -71,12 +67,10 @@ export default function InterviewAgentPage() {
 
   return (
     <div className="container mx-auto px-4 md:px-6 py-8">
-      {phase === PHASE.SETUP && (
-        <SessionSetup onStart={handleStart} />
-      )}
+      {phase === PHASE.SETUP && <NegotiationSetup onStart={handleStart} />}
 
       {phase === PHASE.CHAT && session && (
-        <ChatInterface
+        <NegotiationChat
           session={session}
           messages={messages}
           onSend={handleSend}
@@ -86,11 +80,10 @@ export default function InterviewAgentPage() {
       )}
 
       {phase === PHASE.RESULTS && session && (
-        <SessionResults
+        <NegotiationResults
           sessionId={session.id}
           onRetry={handleRetry}
-          generateFeedback={generateSessionFeedback}
-          analyzeGaps={analyzeResumeGaps}
+          generateSummary={generateNegotiationSummary}
         />
       )}
     </div>

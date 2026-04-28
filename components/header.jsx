@@ -19,6 +19,7 @@ import {
   Brain,
   Menu,
   Zap,
+  DollarSign,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -58,6 +59,7 @@ const navItems = [
   { href: "/ai-cover-letter", icon: PenBox, label: "Cover Letters" },
   { href: "/interview", icon: GraduationCap, label: "Interview Prep" },
   { href: "/interview/agent", icon: Brain, label: "AI Agent", badge: "New" },
+  { href: "/salary-negotiation", icon: DollarSign, label: "Salary Coach", badge: "New" },
 ];
 
 const Header = async () => {
@@ -190,6 +192,18 @@ const Header = async () => {
                       <div className="flex items-center gap-2">
                         <span className="text-sm">AI Agent</span>
                         <Badge className="text-[10px] py-0 px-1.5 bg-indigo-500/20 text-indigo-300 border-indigo-500/30">
+                          New
+                        </Badge>
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+                    <Link href="/salary-negotiation" className="flex items-center gap-2.5 px-3 py-2">
+                      <DollarSign className="h-4 w-4 text-amber-400" />
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">Salary Coach</span>
+                        <Badge className="text-[10px] py-0 px-1.5 bg-amber-500/20 text-amber-300 border-amber-500/30">
                           New
                         </Badge>
                       </div>

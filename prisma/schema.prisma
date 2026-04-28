@@ -25,12 +25,13 @@ model User {
   experience Int?
   skills     String[]
 
-  assessments       Assessment[]
-  resume            Resume?
-  coverLetter       CoverLetter[]
-  tokenTransactions TokenTransaction[]
-  payments          Payment[]
-  interviewSessions InterviewSession[]
+  assessments          Assessment[]
+  resume               Resume?
+  coverLetter          CoverLetter[]
+  tokenTransactions    TokenTransaction[]
+  payments             Payment[]
+  interviewSessions    InterviewSession[]
+  negotiationSessions  NegotiationSession[]
 }
 
 model Assessment {
@@ -107,6 +108,7 @@ model InterviewSession {
   feedback     String?            @db.Text
   strengths    String[]
   improvements String[]
+  gapAnalysis  Json?
   duration     Int?
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
@@ -171,6 +173,33 @@ enum PaymentStatus {
   COMPLETED
   FAILED
   REFUNDED
+}
+
+model NegotiationSession {
+  id           String               @id @default(cuid())
+  userId       String
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobTitle     String
+  company      String?
+  offerDetails String               @db.Text
+  status       SessionStatus        @default(ACTIVE)
+  messages     NegotiationMessage[]
+  summary      Json?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@index([userId])
+}
+
+model NegotiationMessage {
+  id        String             @id @default(cuid())
+  sessionId String
+  session   NegotiationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      MessageRole
+  content   String             @db.Text
+  createdAt DateTime           @default(now())
+
+  @@index([sessionId])
 }
 
 model RateLimit {

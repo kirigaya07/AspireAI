@@ -15,6 +15,11 @@ import {
   MessageSquare,
   Zap,
   Target,
+  FileText,
+  Lightbulb,
+  Code2,
+  Pencil,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -79,7 +84,139 @@ function SubScore({ label, score, icon: Icon, color }) {
   );
 }
 
-export default function SessionResults({ sessionId, onRetry, generateFeedback }) {
+function GapAnalysisPanel({ sessionId, analyzeGaps }) {
+  const [gap, setGap] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [started, setStarted] = useState(false);
+
+  const handleAnalyze = async () => {
+    setStarted(true);
+    setLoading(true);
+    try {
+      const result = await analyzeGaps(sessionId);
+      setGap(result);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!started) {
+    return (
+      <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-6 text-center space-y-3">
+        <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-indigo-500/15 mb-1">
+          <FileText className="h-5 w-5 text-indigo-400" />
+        </div>
+        <div>
+          <h3 className="font-semibold text-sm mb-1">Resume Gap Analyzer</h3>
+          <p className="text-xs text-muted-foreground">
+            Compare your interview weaknesses against your resume and get specific improvement actions.
+          </p>
+        </div>
+        <Button
+          onClick={handleAnalyze}
+          size="sm"
+          className="bg-indigo-500 hover:bg-indigo-600 text-white border-0 rounded-xl"
+        >
+          <Zap className="h-3.5 w-3.5 mr-1.5" />
+          Analyze Gaps · 100 tokens
+        </Button>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-border bg-card p-6 flex items-center justify-center gap-3">
+        <Loader2 className="h-4 w-4 animate-spin text-indigo-400" />
+        <span className="text-sm text-muted-foreground">Comparing interview feedback with your resume...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-4 flex items-center gap-3">
+        <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
+        <p className="text-sm text-rose-400">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-indigo-500/20 bg-card p-6 space-y-5">
+      <h3 className="text-sm font-semibold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+        <FileText className="h-4 w-4" />
+        Resume Gap Analysis
+      </h3>
+
+      {gap.priorityAction && (
+        <div className="rounded-xl bg-indigo-500/10 border border-indigo-500/20 p-4">
+          <p className="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+            <Star className="h-3.5 w-3.5" /> Top Priority
+          </p>
+          <p className="text-sm text-foreground">{gap.priorityAction}</p>
+        </div>
+      )}
+
+      {gap.missingSkills?.length > 0 && (
+        <div className="space-y-2.5">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Zap className="h-3.5 w-3.5" /> Missing Skills
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {gap.missingSkills.map((s, i) => (
+              <Badge key={i} className="text-xs bg-rose-500/10 text-rose-400 border-rose-500/20">{s}</Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {gap.projectIdeas?.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Code2 className="h-3.5 w-3.5" /> Project Ideas to Build
+          </p>
+          <ul className="space-y-1.5">
+            {gap.projectIdeas.map((p, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm">
+                <Lightbulb className="h-3.5 w-3.5 text-amber-400 mt-0.5 shrink-0" />
+                <span className="text-muted-foreground">{p}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {gap.resumeTweaks?.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Pencil className="h-3.5 w-3.5" /> Resume Tweaks
+          </p>
+          <ul className="space-y-1.5">
+            {gap.resumeTweaks.map((t, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 mt-0.5 shrink-0" />
+                <span className="text-muted-foreground">{t}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <Link href="/resume">
+        <Button size="sm" variant="outline" className="w-full rounded-xl border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10">
+          Open Resume Builder
+          <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+        </Button>
+      </Link>
+    </div>
+  );
+}
+
+export default function SessionResults({ sessionId, onRetry, generateFeedback, analyzeGaps }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -198,6 +335,11 @@ export default function SessionResults({ sessionId, onRetry, generateFeedback })
             ))}
           </ul>
         </div>
+      )}
+
+      {/* Gap Analyzer */}
+      {analyzeGaps && result.improvements?.length > 0 && (
+        <GapAnalysisPanel sessionId={sessionId} analyzeGaps={analyzeGaps} />
       )}
 
       {/* Actions */}

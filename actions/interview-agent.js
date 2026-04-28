@@ -4,7 +4,7 @@ import { db } from "@/lib/prisma";
 import { getAuthenticatedUserWith } from "@/lib/auth-utils";
 import { generateWithOpenAI } from "@/lib/openai";
 import { consumeTokens } from "@/lib/tokens";
-import { buildInterviewerSystemPrompt, buildScoringPrompt } from "@/lib/interview-prompts";
+import { buildInterviewerSystemPrompt, buildScoringPrompt, buildGapAnalysisPrompt } from "@/lib/interview-prompts";
 import { extractJSONFromText } from "@/lib/ai-helpers";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { revalidatePath } from "next/cache";
@@ -254,6 +254,56 @@ export async function getInterviewSessions() {
     orderBy: { createdAt: "desc" },
     take: 20,
   });
+}
+
+/**
+ * Analyze resume gaps based on interview weaknesses.
+ * Costs 100 tokens.
+ */
+export async function analyzeResumeGaps(sessionId) {
+  const user = await getAuthenticatedUserWith({ include: { resume: true } });
+
+  const session = await db.interviewSession.findFirst({
+    where: { id: sessionId, userId: user.id },
+  });
+
+  if (!session) throw new Error("Session not found.");
+
+  // Return cached result if already analyzed
+  if (session.gapAnalysis) return session.gapAnalysis;
+
+  if (!session.improvements?.length) {
+    throw new Error("Complete the interview and generate feedback before analyzing gaps.");
+  }
+
+  if (!user.resume?.content) {
+    throw new Error("No resume found. Please build your resume first.");
+  }
+
+  try {
+    await consumeTokens(100, "Resume Gap Analysis", "gap_analyzer");
+  } catch {
+    throw new Error("Insufficient tokens. Please purchase more tokens to continue.");
+  }
+
+  const prompt = buildGapAnalysisPrompt({
+    improvements: session.improvements,
+    jobTitle: session.jobTitle,
+    type: session.type,
+    resumeContent: user.resume.content,
+  });
+
+  const raw = await generateWithOpenAI(prompt);
+  const jsonString = extractJSONFromText(raw);
+  const result = JSON.parse(jsonString);
+
+  await db.interviewSession.update({
+    where: { id: sessionId },
+    data: { gapAnalysis: result },
+  });
+
+  revalidatePath("/interview/agent");
+  return result;
 }
 
 /**
