@@ -12,6 +12,11 @@ import { revalidatePath } from "next/cache";
 const SESSION_TOKEN_COST = 150;
 
 export async function createNegotiationSession({ jobTitle, company, offerDetails }) {
+  if (!jobTitle?.trim() || jobTitle.length > 120)
+    throw new Error("Job title is required and must be under 120 characters.");
+  if (!offerDetails?.trim() || offerDetails.length > 3000)
+    throw new Error("Offer details are required and must be under 3000 characters.");
+
   const user = await getAuthenticatedUserWith({});
 
   try {
@@ -94,26 +99,22 @@ Hiring Manager:`;
 
   const aiResponse = await generateWithOpenAI(fullPrompt);
 
+  const isComplete = aiResponse.includes("[NEGOTIATION_COMPLETE]");
+  // Strip the sentinel before persisting so the DB never stores it
+  const messageContent = isComplete
+    ? aiResponse.replace("[NEGOTIATION_COMPLETE]", "").trim()
+    : aiResponse;
+
   await db.negotiationMessage.create({
-    data: { sessionId, role: "ASSISTANT", content: aiResponse },
+    data: { sessionId, role: "ASSISTANT", content: messageContent },
   });
 
-  const isComplete = aiResponse.includes("[NEGOTIATION_COMPLETE]");
-
   if (isComplete) {
-    const cleanResponse = aiResponse.replace("[NEGOTIATION_COMPLETE]", "").trim();
-
-    await db.negotiationMessage.updateMany({
-      where: { sessionId, content: aiResponse },
-      data: { content: cleanResponse },
-    });
-
     await db.negotiationSession.update({
       where: { id: sessionId },
       data: { status: "COMPLETED" },
     });
-
-    return { message: cleanResponse, isComplete: true, sessionId };
+    return { message: messageContent, isComplete: true, sessionId };
   }
 
   return { message: aiResponse, isComplete: false, sessionId };
@@ -132,6 +133,7 @@ export async function endNegotiationSession(sessionId) {
 
 export async function generateNegotiationSummary(sessionId) {
   const user = await getAuthenticatedUserWith({});
+  await checkRateLimit(user.id, "ai.negotiation.summary", 3, 300_000);
 
   const session = await db.negotiationSession.findFirst({
     where: { id: sessionId, userId: user.id },

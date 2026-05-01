@@ -15,6 +15,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 function Message({ msg }) {
   const isAI = msg.role === "ASSISTANT";
@@ -95,7 +96,7 @@ export default function NegotiationChat({ session, messages: initialMessages, on
       }
     } catch (err) {
       setMessages((prev) => prev.filter((m) => m.id !== userMsg.id));
-      console.error(err);
+      toast.error(err.message || "Failed to send message. Please try again.");
     } finally {
       setSending(false);
     }
