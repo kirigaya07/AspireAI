@@ -127,23 +127,19 @@ Interviewer:`;
 
   const aiResponse = await generateWithOpenAI(fullPrompt);
 
-  // Save AI response
-  await db.interviewMessage.create({
-    data: { sessionId, role: "ASSISTANT", content: aiResponse },
-  });
-
   // Check if the interview is complete
   const isComplete = aiResponse.includes("[INTERVIEW_COMPLETE]");
+  // Strip the sentinel before persisting so the DB never stores it
+  const messageContent = isComplete
+    ? aiResponse.replace("[INTERVIEW_COMPLETE]", "").trim()
+    : aiResponse;
+
+  // Save AI response
+  await db.interviewMessage.create({
+    data: { sessionId, role: "ASSISTANT", content: messageContent },
+  });
 
   if (isComplete) {
-    const cleanResponse = aiResponse.replace("[INTERVIEW_COMPLETE]", "").trim();
-
-    // Update the saved response without the marker
-    await db.interviewMessage.updateMany({
-      where: { sessionId, content: aiResponse },
-      data: { content: cleanResponse },
-    });
-
     // Mark session as completed and generate score
     await db.interviewSession.update({
       where: { id: sessionId },
@@ -151,14 +147,14 @@ Interviewer:`;
     });
 
     return {
-      message: cleanResponse,
+      message: messageContent,
       isComplete: true,
       sessionId,
     };
   }
 
   return {
-    message: aiResponse,
+    message: messageContent,
     isComplete: false,
     sessionId,
   };

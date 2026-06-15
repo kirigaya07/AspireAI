@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/prisma";
 import { razorpay } from "@/lib/razorpay";
 import crypto from "crypto";
-import { recordSuccessfulPayment } from "@/actions/payments";
+import { recordSuccessfulPayment } from "@/lib/payments";
 
 export const runtime = "nodejs";
 
