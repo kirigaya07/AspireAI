@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import OpenAI from "openai";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,13 @@ export async function POST(req) {
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // TTS calls cost real money — cap requests per user.
+    try {
+      await checkRateLimit(userId, "ai.interview.speak", 20, 60_000);
+    } catch (err) {
+      return NextResponse.json({ error: err.message }, { status: 429 });
     }
 
     if (!process.env.OPENAI_API_KEY) {
