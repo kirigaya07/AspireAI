@@ -3,7 +3,7 @@
 import { db } from "@/lib/prisma";
 import { getAuthenticatedUserWith } from "@/lib/auth-utils";
 import { generateWithOpenAI } from "@/lib/openai";
-import { consumeTokens } from "@/lib/tokens";
+import { consumeTokens, addTokens } from "@/lib/tokens";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { buildNegotiatorSystemPrompt, buildNegotiationSummaryPrompt } from "@/lib/negotiation-prompts";
 import { extractJSONFromText } from "@/lib/ai-helpers";
@@ -29,37 +29,39 @@ export async function createNegotiationSession({ jobTitle, company, offerDetails
     throw new Error("Insufficient tokens. Please purchase more tokens to continue.");
   }
 
-  const systemPrompt = buildNegotiatorSystemPrompt({
-    jobTitle,
-    company,
-    offerDetails,
-    candidateName: user.name,
-  });
-
-  const session = await db.negotiationSession.create({
-    data: {
-      userId: user.id,
+  try {
+    const systemPrompt = buildNegotiatorSystemPrompt({
       jobTitle,
-      company: company || null,
+      company,
       offerDetails,
-      status: "ACTIVE",
-    },
-  });
+      candidateName: user.name,
+    });
 
-  const openingPrompt = `${systemPrompt}\n\nBegin the negotiation by greeting the candidate and referencing the specific offer you've extended.`;
-  const openingMessage = await generateWithOpenAI(openingPrompt);
+    const openingPrompt = `${systemPrompt}\n\nBegin the negotiation by greeting the candidate and referencing the specific offer you've extended.`;
+    const openingMessage = await generateWithOpenAI(openingPrompt);
 
-  await db.negotiationMessage.create({
-    data: {
-      sessionId: session.id,
-      role: "ASSISTANT",
-      content: openingMessage,
-    },
-  });
+    // Create the session with its opening message in one write
+    const session = await db.negotiationSession.create({
+      data: {
+        userId: user.id,
+        jobTitle,
+        company: company || null,
+        offerDetails,
+        status: "ACTIVE",
+        messages: {
+          create: { role: "ASSISTANT", content: openingMessage },
+        },
+      },
+    });
 
-  revalidatePath("/salary-negotiation");
+    revalidatePath("/salary-negotiation");
 
-  return { sessionId: session.id, openingMessage };
+    return { sessionId: session.id, openingMessage };
+  } catch (err) {
+    // Refund: the AI call or DB write failed, so nothing usable was created.
+    await addTokens(SESSION_TOKEN_COST, "Refund: Salary Negotiation session failed").catch(() => {});
+    throw err;
+  }
 }
 
 export async function sendNegotiationMessage(sessionId, userMessage) {

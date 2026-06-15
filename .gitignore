@@ -42,3 +42,6 @@ next-env.d.ts
 
 .claude
 .vscode
+
+# local Claude Code memory (not project code)
+memory/

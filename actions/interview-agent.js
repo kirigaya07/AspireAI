@@ -3,7 +3,7 @@
 import { db } from "@/lib/prisma";
 import { getAuthenticatedUserWith } from "@/lib/auth-utils";
 import { generateWithOpenAI } from "@/lib/openai";
-import { consumeTokens } from "@/lib/tokens";
+import { consumeTokens, addTokens } from "@/lib/tokens";
 import { buildInterviewerSystemPrompt, buildScoringPrompt, buildGapAnalysisPrompt } from "@/lib/interview-prompts";
 import { extractJSONFromText } from "@/lib/ai-helpers";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -28,55 +28,47 @@ export async function createInterviewSession({ jobTitle, company, type, difficul
     throw new Error("Insufficient tokens. Please purchase more tokens to continue.");
   }
 
-  const systemPrompt = buildInterviewerSystemPrompt({
-    jobTitle,
-    company,
-    type,
-    difficulty,
-    candidateName: user.name,
-    candidateSkills: user.skills,
-    candidateIndustry: user.industry,
-  });
-
-  // Create session in DB
-  const session = await db.interviewSession.create({
-    data: {
-      userId: user.id,
+  try {
+    const systemPrompt = buildInterviewerSystemPrompt({
       jobTitle,
-      company: company || null,
+      company,
       type,
       difficulty,
-      status: "ACTIVE",
-      messages: {
-        create: {
-          role: "ASSISTANT",
-          content: "__SYSTEM__", // placeholder — we store the system prompt separately
+      candidateName: user.name,
+      candidateSkills: user.skills,
+      candidateIndustry: user.industry,
+    });
+
+    // Generate the opening message from the AI interviewer
+    const openingPrompt = `${systemPrompt}\n\nBegin the interview now with your introduction and first question.`;
+    const openingMessage = await generateWithOpenAI(openingPrompt);
+
+    // Create the session with its opening message in one write
+    const session = await db.interviewSession.create({
+      data: {
+        userId: user.id,
+        jobTitle,
+        company: company || null,
+        type,
+        difficulty,
+        status: "ACTIVE",
+        messages: {
+          create: { role: "ASSISTANT", content: openingMessage },
         },
       },
-    },
-  });
+    });
 
-  // Generate the opening message from the AI interviewer
-  const openingPrompt = `${systemPrompt}\n\nBegin the interview now with your introduction and first question.`;
-  const openingMessage = await generateWithOpenAI(openingPrompt);
+    revalidatePath("/interview/agent");
 
-  // Replace the placeholder with the real opening message
-  await db.interviewMessage.deleteMany({ where: { sessionId: session.id } });
-
-  await db.interviewMessage.create({
-    data: {
+    return {
       sessionId: session.id,
-      role: "ASSISTANT",
-      content: openingMessage,
-    },
-  });
-
-  revalidatePath("/interview/agent");
-
-  return {
-    sessionId: session.id,
-    openingMessage,
-  };
+      openingMessage,
+    };
+  } catch (err) {
+    // Refund: the AI call or DB write failed, so nothing usable was created.
+    await addTokens(SESSION_TOKEN_COST, "Refund: AI Interview Session failed").catch(() => {});
+    throw err;
+  }
 }
 
 /**
@@ -258,6 +250,7 @@ export async function getInterviewSessions() {
  */
 export async function analyzeResumeGaps(sessionId) {
   const user = await getAuthenticatedUserWith({ include: { resume: true } });
+  await checkRateLimit(user.id, "ai.gap-analysis", 5, 300_000);
 
   const session = await db.interviewSession.findFirst({
     where: { id: sessionId, userId: user.id },
@@ -282,24 +275,30 @@ export async function analyzeResumeGaps(sessionId) {
     throw new Error("Insufficient tokens. Please purchase more tokens to continue.");
   }
 
-  const prompt = buildGapAnalysisPrompt({
-    improvements: session.improvements,
-    jobTitle: session.jobTitle,
-    type: session.type,
-    resumeContent: user.resume.content,
-  });
+  try {
+    const prompt = buildGapAnalysisPrompt({
+      improvements: session.improvements,
+      jobTitle: session.jobTitle,
+      type: session.type,
+      resumeContent: user.resume.content,
+    });
 
-  const raw = await generateWithOpenAI(prompt);
-  const jsonString = extractJSONFromText(raw);
-  const result = JSON.parse(jsonString);
+    const raw = await generateWithOpenAI(prompt);
+    const jsonString = extractJSONFromText(raw);
+    const result = JSON.parse(jsonString);
 
-  await db.interviewSession.update({
-    where: { id: sessionId },
-    data: { gapAnalysis: result },
-  });
+    await db.interviewSession.update({
+      where: { id: sessionId },
+      data: { gapAnalysis: result },
+    });
 
-  revalidatePath("/interview/agent");
-  return result;
+    revalidatePath("/interview/agent");
+    return result;
+  } catch (err) {
+    // Refund: the AI call or JSON parse failed, so the user got nothing usable.
+    await addTokens(100, "Refund: Resume Gap Analysis failed").catch(() => {});
+    throw err;
+  }
 }
 
 /**
